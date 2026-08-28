@@ -1,0 +1,80 @@
+@import 'leaflet/dist/leaflet.css';
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Leaflet Customization */
+.leaflet-container {
+  font-family: inherit;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.custom-settlement-marker, .custom-site-marker {
+  background: transparent;
+  border: none;
+}
+
+/* Print Stylesheet for Cabinet Dossier */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .no-print, #app-sidebar, header, #toast-container, #mobile-sidebar-toggle {
+    display: none !important;
+  }
+
+  main, #app-shell, #main-content-container {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  #printable-dossier {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  .bg-surface-container-lowest {
+    background: #ffffff !important;
+    border: none !important;
+    box-shadow: none !important;
+  }
+}

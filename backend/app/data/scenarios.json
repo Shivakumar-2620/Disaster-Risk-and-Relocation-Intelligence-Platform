@@ -1,0 +1,67 @@
+[
+  {
+    "id": 1,
+    "name": "Baseline Monsoonal Normal (0% change)",
+    "rainfall_change": 0.0,
+    "description": "Standard southwest monsoon average (250mm / 24hr). Site A (Kalpetta North) remains top recommendation.",
+    "site_scores": {
+      "1": 91.0,
+      "2": 74.0,
+      "3": 58.0,
+      "4": 66.0
+    },
+    "recommendation": "Site A - Kalpetta North Plateau"
+  },
+  {
+    "id": 2,
+    "name": "Moderate Deficit (-10% change)",
+    "rainfall_change": -10.0,
+    "description": "Lower antecedent soil saturation. Site A maintains high stability index.",
+    "site_scores": {
+      "1": 93.0,
+      "2": 72.0,
+      "3": 60.0,
+      "4": 68.0
+    },
+    "recommendation": "Site A - Kalpetta North Plateau"
+  },
+  {
+    "id": 3,
+    "name": "High Monsoon Surge (+10% change)",
+    "rainfall_change": 10.0,
+    "description": "Elevated runoff. Site A score moderates slightly to 80.0, Site B rises to 77.5.",
+    "site_scores": {
+      "1": 80.0,
+      "2": 77.5,
+      "3": 56.5,
+      "4": 62.0
+    },
+    "recommendation": "Site A - Kalpetta North Plateau"
+  },
+  {
+    "id": 4,
+    "name": "Severe Cloudburst (+20% change)",
+    "rainfall_change": 20.0,
+    "description": "Extreme 572mm / 24hr burst. Kalpetta North slope margin faces catchment surcharge (drops to 69.0), while Meenangadi Granite Plateau excels in rapid drainage (rises to 81.0). Recommendation shifts to Site B.",
+    "site_scores": {
+      "1": 69.0,
+      "2": 81.0,
+      "3": 55.0,
+      "4": 58.0
+    },
+    "recommendation": "Site B - Meenangadi Model Township"
+  },
+  {
+    "id": 5,
+    "name": "Catastrophic Storm (+30% change)",
+    "rainfall_change": 30.0,
+    "description": "Unprecedented regional inundation. Site B (Meenangadi Plateau) provides highest structural factor of safety (84.5).",
+    "site_scores": {
+      "1": 58.0,
+      "2": 84.5,
+      "3": 53.5,
+      "4": 54.0
+    },
+    "recommendation": "Site B - Meenangadi Model Township"
+  }
+]
