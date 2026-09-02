@@ -1,0 +1,256 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.1352, 11.5386]
+      },
+      "properties": {
+        "id": 1,
+        "name": "Mundakkai",
+        "entity_type": "settlement",
+        "risk_score": 91.0,
+        "risk_level": "CRITICAL",
+        "population": 1420,
+        "households": 340,
+        "priority_households": 183,
+        "landslide_risk": 96.0,
+        "hazard_category": "Catastrophic Debris Flow Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.1489, 11.5421]
+      },
+      "properties": {
+        "id": 2,
+        "name": "Chooralmala",
+        "entity_type": "settlement",
+        "risk_score": 86.0,
+        "risk_level": "CRITICAL",
+        "population": 2150,
+        "households": 480,
+        "priority_households": 215,
+        "landslide_risk": 89.0,
+        "hazard_category": "Riverine Surge & Sediment Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.129, 11.528]
+      },
+      "properties": {
+        "id": 3,
+        "name": "Attamala",
+        "entity_type": "settlement",
+        "risk_score": 82.0,
+        "risk_level": "CRITICAL",
+        "population": 980,
+        "households": 220,
+        "priority_households": 110,
+        "landslide_risk": 84.0,
+        "hazard_category": "Steep Slope Isolation Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.124, 11.548]
+      },
+      "properties": {
+        "id": 4,
+        "name": "Punchirimattam",
+        "entity_type": "settlement",
+        "risk_score": 88.0,
+        "risk_level": "CRITICAL",
+        "population": 620,
+        "households": 145,
+        "priority_households": 95,
+        "landslide_risk": 92.0,
+        "hazard_category": "Upper Catchment Slip Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.155, 11.534]
+      },
+      "properties": {
+        "id": 5,
+        "name": "Vellarmala",
+        "entity_type": "settlement",
+        "risk_score": 76.0,
+        "risk_level": "HIGH",
+        "population": 1280,
+        "households": 310,
+        "priority_households": 90,
+        "landslide_risk": 78.0,
+        "hazard_category": "Deposition Channel Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.128, 11.553]
+      },
+      "properties": {
+        "id": 6,
+        "name": "Meppadi Town Perimeter",
+        "entity_type": "settlement",
+        "risk_score": 54.0,
+        "risk_level": "MODERATE",
+        "population": 4500,
+        "households": 1020,
+        "priority_households": 65,
+        "landslide_risk": 52.0,
+        "hazard_category": "Intermediate Buffer Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.321, 11.632]
+      },
+      "properties": {
+        "id": 7,
+        "name": "Noolpuzha Highland",
+        "entity_type": "settlement",
+        "risk_score": 32.0,
+        "risk_level": "LOW",
+        "population": 3200,
+        "households": 780,
+        "priority_households": 20,
+        "landslide_risk": 28.0,
+        "hazard_category": "Low-Risk Highland Zone"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.088, 11.631]
+      },
+      "properties": {
+        "id": 1,
+        "name": "Site A - Kalpetta North Plateau",
+        "entity_type": "candidate_site",
+        "overall_score": 91.0,
+        "status": "PASSED",
+        "safety_score": 92.0,
+        "capacity": 1200,
+        "distance_km": 14.5
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.172, 11.662]
+      },
+      "properties": {
+        "id": 2,
+        "name": "Site B - Meenangadi Model Township",
+        "entity_type": "candidate_site",
+        "overall_score": 74.0,
+        "status": "CONDITIONAL",
+        "safety_score": 84.0,
+        "capacity": 850,
+        "distance_km": 18.2
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.262, 11.674]
+      },
+      "properties": {
+        "id": 3,
+        "name": "Site C - Sultan Bathery East",
+        "entity_type": "candidate_site",
+        "overall_score": 58.0,
+        "status": "REJECTED",
+        "safety_score": 68.0,
+        "capacity": 500,
+        "distance_km": 26.0
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [76.042, 11.554]
+      },
+      "properties": {
+        "id": 4,
+        "name": "Site D - Vythiri Terraces",
+        "entity_type": "candidate_site",
+        "overall_score": 66.0,
+        "status": "CONDITIONAL",
+        "safety_score": 72.0,
+        "capacity": 600,
+        "distance_km": 11.8
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [76.118, 11.555],
+            [76.142, 11.549],
+            [76.158, 11.536],
+            [76.152, 11.525],
+            [76.130, 11.522],
+            [76.115, 11.535],
+            [76.118, 11.555]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "polygon-hazard-red",
+        "name": "DEMO: Meppadi-Mundakkai High Hazard Debris Flow Corridor",
+        "entity_type": "hazard_polygon",
+        "risk_level": "CRITICAL",
+        "fill_color": "#ef4444",
+        "slope_gradient": ">35 degrees",
+        "geology": "Thick weathered laterite overburden over Precambrian gneiss"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [76.075, 11.640],
+            [76.100, 11.642],
+            [76.102, 11.620],
+            [76.078, 11.618],
+            [76.075, 11.640]
+          ]
+        ]
+      },
+      "properties": {
+        "id": "polygon-safe-green",
+        "name": "DEMO: Kalpetta North Resettlement Green Plateau Zone",
+        "entity_type": "safe_polygon",
+        "risk_level": "LOW",
+        "fill_color": "#10b981",
+        "slope_gradient": "<4.5 degrees",
+        "geology": "Hard Charnockite crystalline basement with high bearing capacity"
+      }
+    }
+  ]
+}
