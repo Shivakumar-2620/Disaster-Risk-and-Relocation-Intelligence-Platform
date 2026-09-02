@@ -9,6 +9,7 @@ import { renderLoginScreen, setupLoginEvents } from './screens/loginScreen.js';
 import { renderDashboardScreen, setupDashboardEvents } from './screens/dashboardScreen.js';
 import { renderMapScreen, setupMapEvents } from './screens/mapScreen.js';
 import { renderRiskProfileScreen, setupRiskProfileEvents } from './screens/riskProfileScreen.js';
+import { renderModelValidationScreen, setupModelValidationEvents } from './screens/modelValidationScreen.js';
 import { renderRelocationToolScreen, setupRelocationToolEvents } from './screens/relocationToolScreen.js';
 import { renderSiteRevalidationScreen, setupSiteRevalidationEvents } from './screens/siteRevalidationScreen.js';
 import { renderRecommendationScreen, setupRecommendationEvents } from './screens/recommendationScreen.js';
@@ -23,6 +24,7 @@ export class Router {
       'dashboard': { render: renderDashboardScreen, setup: setupDashboardEvents },
       'map': { render: renderMapScreen, setup: setupMapEvents, noPadding: true },
       'risk-profile': { render: renderRiskProfileScreen, setup: setupRiskProfileEvents },
+      'model-validation': { render: renderModelValidationScreen, setup: setupModelValidationEvents },
       'relocation-tool': { render: renderRelocationToolScreen, setup: setupRelocationToolEvents },
       'site-revalidation': { render: renderSiteRevalidationScreen, setup: setupSiteRevalidationEvents },
       'recommendation': { render: renderRecommendationScreen, setup: setupRecommendationEvents },

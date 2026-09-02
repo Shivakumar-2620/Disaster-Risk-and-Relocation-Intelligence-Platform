@@ -1,14 +1,26 @@
 /**
- * Climate Stress Simulator & Recommendation Screen Component
+ * Climate Stress Simulator & Multi-Variable Scenario Recommendation Screen
  */
 import { WAYANAD_DATA } from '../data/wayanadData.js';
 import { appState } from '../services/state.js';
 
 export function renderRecommendationScreen() {
-  const { simulatedRainfallIntensity } = appState.getState();
+  const { simulatedRainfallIntensity, simulatedRoadDisruption, simulatedCapacityReduction } = appState.getState();
   
   // Find current stress matrix level based on simulatedRainfallIntensity
   const stress = WAYANAD_DATA.monsoonStressMatrix.find(m => m.rainfallIntensity === simulatedRainfallIntensity) || WAYANAD_DATA.monsoonStressMatrix[0];
+
+  // Dynamic decision logic
+  const isExtremeRain = simulatedRainfallIntensity >= 50;
+  const isRoadSevered = Boolean(simulatedRoadDisruption);
+  const isShiftToBeta = isExtremeRain || isRoadSevered;
+  const isCapacityConstrained = (simulatedCapacityReduction || 0) >= 25;
+
+  const topSiteName = isShiftToBeta ? "Site Beta (Meenangadi Model Township)" : "Site Alpha (Kalpetta North Plateau)";
+  const topSiteCode = isShiftToBeta ? "SITE-B" : "SITE-A";
+
+  const effectiveCapA = Math.round(1200 * (1 - (simulatedCapacityReduction || 0) / 100));
+  const effectiveCapB = Math.round(1500 * (1 - (simulatedCapacityReduction || 0) / 100));
 
   return `
     <div class="p-4 md:p-margin-desktop max-w-7xl mx-auto flex flex-col gap-6">
@@ -17,10 +29,10 @@ export function renderRecommendationScreen() {
         <div>
           <div class="flex items-center gap-2 text-xs font-mono text-emerald-800 dark:text-emerald-400 font-semibold mb-1">
             <span class="material-symbols-outlined text-sm">thunderstorm</span>
-            EXTREME WEATHER CLIMATE STRESS SIMULATOR (100-YR RETURN PERIOD)
+            MULTI-VARIABLE CLIMATE & LOGISTICAL STRESS SIMULATOR
           </div>
-          <h1 class="font-display-md text-2xl md:text-3xl font-bold text-primary">Climate Scenarios & Comparative Recommendation</h1>
-          <p class="text-xs text-on-surface-variant mt-1">Stress-testing candidate resettlement sites against monsoon surge precipitation</p>
+          <h1 class="font-display-md text-2xl md:text-3xl font-bold text-primary">Scenario Testing & Dynamic Recommendation</h1>
+          <p class="text-xs text-on-surface-variant mt-1">Multi-variable stress tests: Rainfall surge, arterial road cut-offs, and parcel capacity constraints</p>
         </div>
 
         <a href="#final-report" class="bg-primary hover:bg-primary-container text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5">
@@ -29,67 +41,157 @@ export function renderRecommendationScreen() {
         </a>
       </div>
 
-      <!-- Live Rainfall Slider Simulator -->
-      <div class="bg-surface-container-lowest p-6 rounded-2xl border-2 border-primary/30 shadow-lg space-y-4">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+      <!-- Live Multi-Variable Stress Control Hub -->
+      <div class="bg-surface-container-lowest p-6 rounded-2xl border-2 border-primary/30 shadow-lg space-y-5">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-outline-variant pb-3">
           <div>
             <h3 class="font-headline-sm text-base font-bold text-primary flex items-center gap-2">
-              <span class="material-symbols-outlined text-blue-600">rainy</span> Simulated Monsoon Precipitation Surge
+              <span class="material-symbols-outlined text-blue-600">tune</span> Dynamic Stress Variables Control Matrix
             </h3>
-            <p class="text-xs text-slate-500">Slide to test site geotechnical resilience under varying cloudburst scenarios</p>
+            <p class="text-xs text-slate-500">Perturb environmental, infrastructural, and land parcel parameters simultaneously</p>
           </div>
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-500 font-mono">Current Scenario:</span>
-            <span id="rain-intensity-badge" class="font-bold text-xs px-3 py-1 rounded-full font-mono bg-secondary-container text-on-secondary-container">
-              ${stress.label}
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs text-slate-500 font-mono">Simulated Recommendation:</span>
+            <span class="font-bold text-xs px-3 py-1 rounded-full font-mono ${isShiftToBeta ? 'bg-blue-600 text-white' : 'bg-emerald-600 text-white'} shadow-sm flex items-center gap-1">
+              <span class="material-symbols-outlined text-xs">recommend</span> ${topSiteCode}: ${isShiftToBeta ? 'MEENANGADI' : 'KALPETTA NORTH'}
             </span>
           </div>
         </div>
 
-        <!-- Slider Bar -->
-        <div class="space-y-2 py-2">
-          <input type="range" id="rainfall-sim-slider" min="0" max="100" step="25" value="${simulatedRainfallIntensity}" class="w-full h-3 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary">
-          <div class="flex justify-between text-[11px] font-mono text-slate-500">
-            <span>0% (Base)</span>
-            <span>+25% (Heavy)</span>
-            <span>+50% (Very Heavy)</span>
-            <span>+75% (Severe)</span>
-            <span>+100% (Cloudburst)</span>
+        <!-- 3-Variable Sliders & Toggles Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <!-- Variable 1: Rainfall Surge -->
+          <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant space-y-2">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-blue-600">rainy</span> Precipitation Surge
+              </span>
+              <span id="rain-intensity-badge" class="font-bold font-mono text-primary">${stress.label}</span>
+            </div>
+            <input type="range" id="rainfall-sim-slider" min="0" max="100" step="25" value="${simulatedRainfallIntensity}" class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary">
+            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>0% (Base)</span>
+              <span>+50% (Cloudburst)</span>
+              <span>+100% (1-in-100 Yr)</span>
+            </div>
+          </div>
+
+          <!-- Variable 2: Road Disruption Toggle -->
+          <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs font-semibold mb-1">
+                <span class="text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm text-amber-600">alt_route</span> Arterial Road Disruption
+                </span>
+                <span class="font-bold font-mono text-xs ${isRoadSevered ? 'text-rose-600' : 'text-emerald-600'}">
+                  ${isRoadSevered ? 'ROUTE SEVERED' : 'CLEAR'}
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500">Simulate flash-flood bridge collapse or arterial highway spur cut-off</p>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <input type="checkbox" id="road-disruption-toggle" ${isRoadSevered ? 'checked' : ''} class="w-4 h-4 text-primary rounded accent-primary cursor-pointer">
+              <span class="text-xs font-bold ${isRoadSevered ? 'text-rose-700 dark:text-rose-300' : 'text-slate-700 dark:text-slate-300'}">
+                ${isRoadSevered ? 'Simulating Severed Arteries (Active)' : 'Sever Primary Highway Spur'}
+              </span>
+            </label>
+          </div>
+
+          <!-- Variable 3: Capacity Reduction Slider -->
+          <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant space-y-2">
+            <div class="flex justify-between items-center text-xs font-semibold">
+              <span class="text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm text-purple-600">aspect_ratio</span> Buffer Capacity Loss
+              </span>
+              <span id="capacity-reduction-val" class="font-bold font-mono text-primary">${simulatedCapacityReduction || 0}% Loss</span>
+            </div>
+            <input type="range" id="capacity-reduction-slider" min="0" max="50" step="10" value="${simulatedCapacityReduction || 0}" class="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-primary">
+            <div class="flex justify-between text-[10px] font-mono text-slate-400">
+              <span>0% Full Footprint</span>
+              <span>25% Eco Buffer</span>
+              <span>50% Heavy Setback</span>
+            </div>
           </div>
         </div>
+
+        <!-- Dynamic Rational Recommendation Alert Banner -->
+        ${isShiftToBeta ? `
+          <div class="p-4 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900 text-blue-950 dark:text-blue-100 flex items-start gap-3">
+            <span class="material-symbols-outlined text-blue-600 text-2xl mt-0.5">swap_horiz</span>
+            <div class="text-xs space-y-1">
+              <div class="font-bold uppercase tracking-wider text-blue-900 dark:text-blue-200">
+                DYNAMIC RECOMMENDATION SHIFT ACTIVATED: Recommendation Diverted to Site B (Meenangadi)
+              </div>
+              <p class="leading-relaxed text-blue-900/90 dark:text-blue-200/90">
+                Under ${isExtremeRain ? 'heavy precipitation surge (≥+50%)' : ''} ${isExtremeRain && isRoadSevered ? 'and' : ''} ${isRoadSevered ? 'severed arterial access corridors' : ''}, 
+                <strong>Site B (Meenangadi Model Township)</strong> provides superior structural resilience due to high-capacity storm run-off drainage channels and dual independent highway access (NH-766 + Regional Arterial).
+              </p>
+            </div>
+          </div>
+        ` : `
+          <div class="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900 text-emerald-950 dark:text-emerald-100 flex items-start gap-3">
+            <span class="material-symbols-outlined text-emerald-600 text-2xl mt-0.5">check_circle</span>
+            <div class="text-xs space-y-1">
+              <div class="font-bold uppercase tracking-wider text-emerald-900 dark:text-emerald-200">
+                BASELINE STABILITY OPTIMAL: Site A (Kalpetta North) Remains Primary Choice
+              </div>
+              <p class="leading-relaxed text-emerald-900/90 dark:text-emerald-200/90">
+                Crystalline Charnockite basement plateau provides 100% bearing safety under standard-to-heavy rainfall parameters. All arterial corridors and utility conduits operational.
+              </p>
+            </div>
+          </div>
+        `}
+
+        <!-- Split-Allocation Contingency Banner -->
+        ${isCapacityConstrained ? `
+          <div class="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-900 text-amber-950 dark:text-amber-100 flex items-start gap-3">
+            <span class="material-symbols-outlined text-amber-600 text-2xl mt-0.5">call_split</span>
+            <div class="text-xs space-y-1">
+              <div class="font-bold uppercase tracking-wider text-amber-900 dark:text-amber-200">
+                DUAL-SITE PHASED RELOCATION MANDATE (Capacity Reduced by ${simulatedCapacityReduction}%)
+              </div>
+              <p class="leading-relaxed text-amber-900/90 dark:text-amber-200/90">
+                With buildable capacity reduced to <strong>${effectiveCapA} units</strong> at Site A and <strong>${effectiveCapB} units</strong> at Site B, no single site can safely accommodate the full 1,760 displaced households from Mundakkai & Chooralmala.
+                <strong>Split Allocation Strategy:</strong> Phase 1 (Priority 1 Orphaned & Elderly) directed to Kalpetta North (${effectiveCapA} HH), Phase 2 (Buffer Zone Inhabitants) to Meenangadi Township (${effectiveCapB} HH).
+              </p>
+            </div>
+          </div>
+        ` : ''}
 
         <!-- Real-Time Projected Status Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
           <!-- Site Alpha -->
-          <div class="p-4 rounded-xl border ${stress.siteASafetyClass} flex flex-col justify-between">
+          <div class="p-4 rounded-xl border ${isShiftToBeta ? 'border-slate-300 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300' : stress.siteASafetyClass} flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center text-xs font-bold mb-1">
                 <span>SITE ALPHA (Kalpetta North)</span>
-                <span class="material-symbols-outlined text-sm">verified</span>
+                <span class="material-symbols-outlined text-sm">${isShiftToBeta ? 'info' : 'verified'}</span>
               </div>
               <p class="text-xs mt-1">Geological Stability: <strong>${stress.siteASafety}</strong></p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Effective Capacity: <strong>${effectiveCapA} Units</strong></p>
             </div>
             <div class="text-[11px] opacity-80 mt-2">
-              Crystalline Plateau • Zero residual boulder hazard
+              ${isRoadSevered ? '⚠️ Road corridor severed: arterial access restricted.' : 'Crystalline Plateau • Zero boulder hazard'}
             </div>
           </div>
 
           <!-- Site Beta -->
-          <div class="p-4 rounded-xl border ${stress.siteBSafetyClass} flex flex-col justify-between">
+          <div class="p-4 rounded-xl border ${isShiftToBeta ? 'border-2 border-blue-600 bg-blue-50/50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-100 shadow-md' : stress.siteBSafetyClass} flex flex-col justify-between">
             <div>
               <div class="flex justify-between items-center text-xs font-bold mb-1">
                 <span>SITE BETA (Mananthavady)</span>
-                <span class="material-symbols-outlined text-sm">domain</span>
+                <span class="material-symbols-outlined text-sm">${isShiftToBeta ? 'stars' : 'domain'}</span>
               </div>
               <p class="text-xs mt-1">Geological Stability: <strong>${stress.siteBSafety}</strong></p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Effective Capacity: <strong>${effectiveCapB} Units</strong></p>
             </div>
             <div class="text-[11px] opacity-80 mt-2">
-              Terrace Overburden • Moderate saturation capacity
+              ${isShiftToBeta ? '⭐ TOP RECOMMENDED: Dual highway redundancy & rapid drainage.' : 'Terrace Overburden • Moderate saturation'}
             </div>
           </div>
 
           <!-- Site Gamma -->
-          <div class="p-4 rounded-xl border ${stress.siteCSafetyClass} flex flex-col justify-between">
+          <div class="p-4 rounded-xl border ${stress.siteCSafetyClass} flex flex-col justify-between opacity-85">
             <div>
               <div class="flex justify-between items-center text-xs font-bold mb-1">
                 <span>SITE GAMMA (Nedumbala)</span>
@@ -98,7 +200,7 @@ export function renderRecommendationScreen() {
               <p class="text-xs mt-1">Geological Stability: <strong>${stress.siteCSafety}</strong></p>
             </div>
             <div class="text-[11px] opacity-80 mt-2">
-              Intermediate Slope • Secondary seepage failure risk
+              DISQUALIFIED • Residual slope hazard & elephant corridor
             </div>
           </div>
         </div>
@@ -136,8 +238,8 @@ export function renderRecommendationScreen() {
               </tr>
               <tr class="hover:bg-surface-container-low transition">
                 <td class="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Planned Residential Capacity</td>
-                <td class="py-3 px-4 font-bold text-emerald-700 dark:text-emerald-400">1,200 Housing Units</td>
-                <td class="py-3 px-4 text-on-surface">1,500 Housing Units</td>
+                <td class="py-3 px-4 font-bold text-emerald-700 dark:text-emerald-400">${effectiveCapA} Housing Units</td>
+                <td class="py-3 px-4 text-on-surface">${effectiveCapB} Housing Units</td>
                 <td class="py-3 px-4 text-on-surface">800 Housing Units</td>
               </tr>
               <tr class="hover:bg-surface-container-low transition">
@@ -155,11 +257,15 @@ export function renderRecommendationScreen() {
               <tr class="hover:bg-surface-container-low transition">
                 <td class="py-3 px-4 font-semibold text-slate-700 dark:text-slate-300">Recommendation Status</td>
                 <td class="py-3 px-4">
-                  <span class="inline-flex items-center gap-1 font-bold text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded text-[11px]">
-                    <span class="material-symbols-outlined text-xs">verified</span> UNANIMOUS #1 CHOICE
+                  <span class="inline-flex items-center gap-1 font-bold ${isShiftToBeta ? 'text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800' : 'text-emerald-800 dark:text-emerald-300 bg-emerald-100 dark:bg-emerald-950'} px-2 py-0.5 rounded text-[11px]">
+                    <span class="material-symbols-outlined text-xs">${isShiftToBeta ? 'pending' : 'verified'}</span> ${isShiftToBeta ? 'Secondary Buffer Reserve' : 'UNANIMOUS #1 CHOICE'}
                   </span>
                 </td>
-                <td class="py-3 px-4 text-slate-600">Phase 2 Buffer Reserve</td>
+                <td class="py-3 px-4">
+                  <span class="inline-flex items-center gap-1 font-bold ${isShiftToBeta ? 'text-blue-800 dark:text-blue-300 bg-blue-100 dark:bg-blue-950' : 'text-slate-600'} px-2 py-0.5 rounded text-[11px]">
+                    ${isShiftToBeta ? '⭐ TOP RECOMMENDED IN SCENARIO' : 'Phase 2 Buffer Reserve'}
+                  </span>
+                </td>
                 <td class="py-3 px-4 text-rose-600 font-semibold">Rejected (Hazard Risk)</td>
               </tr>
             </tbody>
@@ -171,15 +277,37 @@ export function renderRecommendationScreen() {
 }
 
 export function setupRecommendationEvents() {
-  const slider = document.getElementById('rainfall-sim-slider');
-  if (slider) {
-    slider.addEventListener('input', (e) => {
+  const rainSlider = document.getElementById('rainfall-sim-slider');
+  const roadToggle = document.getElementById('road-disruption-toggle');
+  const capSlider = document.getElementById('capacity-reduction-slider');
+
+  function triggerReRender() {
+    const mainEl = document.getElementById('screen-recommendation');
+    if (mainEl) {
+      mainEl.innerHTML = renderRecommendationScreen();
+      setupRecommendationEvents();
+    }
+  }
+
+  if (rainSlider) {
+    rainSlider.addEventListener('input', (e) => {
       appState.setRainfallIntensity(e.target.value);
-      const mainEl = document.getElementById('screen-recommendation');
-      if (mainEl) {
-        mainEl.innerHTML = renderRecommendationScreen();
-        setupRecommendationEvents();
-      }
+      triggerReRender();
+    });
+  }
+
+  if (roadToggle) {
+    roadToggle.addEventListener('change', (e) => {
+      appState.setRoadDisruption(e.target.checked);
+      triggerReRender();
+    });
+  }
+
+  if (capSlider) {
+    capSlider.addEventListener('input', (e) => {
+      appState.setCapacityReduction(e.target.value);
+      triggerReRender();
     });
   }
 }
+

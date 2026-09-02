@@ -1,5 +1,5 @@
 """Pydantic schemas for Candidate Relocation Sites."""
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -26,6 +26,7 @@ class SiteResponse(SiteBase):
     overall_score: float
     status: str
     reasons: List[str] = []
+    hard_constraints: Optional[Dict[str, Any]] = None
 
     class Config:
         from_attributes = True
@@ -49,6 +50,7 @@ class SiteRevalidateResponse(BaseModel):
     validation_status: str
     status: str
     reasons: List[str]
+    hard_constraints: Optional[Dict[str, Any]] = None
     statutory_note: str = "Recommended for further administrative verification."
 
 
@@ -72,6 +74,7 @@ class SiteComparisonItem(BaseModel):
     future_risk: float
     cost_score: float
     reasons: List[str]
+    hard_constraints: Optional[Dict[str, Any]] = None
 
 
 class SiteCompareResponse(BaseModel):
