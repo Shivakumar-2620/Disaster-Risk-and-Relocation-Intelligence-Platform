@@ -41,10 +41,25 @@ def run_scenario_simulation(
             detail=f"Rainfall change must be between {settings.SCENARIO_MIN_RAINFALL} and {settings.SCENARIO_MAX_RAINFALL}"
         )
 
+    road_disruption = bool(payload.get("road_access_disruption", False))
+    try:
+        cap_reduction = float(payload.get("capacity_reduction", 0.0))
+    except (ValueError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid capacity reduction value")
+
+    if cap_reduction < 0.0 or cap_reduction > 60.0:
+        raise HTTPException(status_code=400, detail="Capacity reduction must be between 0% and 60%")
+
     sites = db.query(CandidateRelocationSite).all()
     settlements = db.query(Settlement).all()
 
-    return simulate_climate_scenario(rf, sites, settlements)
+    return simulate_climate_scenario(
+        rainfall_change=rf,
+        sites=sites,
+        settlements=settlements,
+        road_access_disruption=road_disruption,
+        capacity_reduction=cap_reduction,
+    )
 
 
 @router.get("/scenarios")

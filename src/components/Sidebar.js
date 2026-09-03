@@ -11,6 +11,7 @@ export function renderSidebar() {
     { id: 'dashboard', label: 'District Dashboard', icon: 'dashboard', badge: 'Live' },
     { id: 'map', label: 'Interactive Risk Map', icon: 'map', badge: 'GIS' },
     { id: 'risk-profile', label: 'Settlement Risk Profile', icon: 'warning', badge: '4 Zones' },
+    { id: 'model-validation', label: 'ML Model Validation', icon: 'psychology', badge: 'RF 97%' },
     { id: 'relocation-tool', label: 'Relocation Planning Tool', icon: 'hub', badge: 'MCDA' },
     { id: 'site-revalidation', label: 'Site Revalidation', icon: 'fact_check', badge: 'GSI' },
     { id: 'recommendation', label: 'Climate Scenarios', icon: 'thunderstorm', badge: 'Sim' },

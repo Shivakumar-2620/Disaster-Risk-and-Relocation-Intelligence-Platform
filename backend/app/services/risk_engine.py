@@ -1,18 +1,29 @@
 """
-Transparent, rule-based Risk Engine for Wayanad Settlements.
+Transparent, Hybrid Risk Engine for Wayanad Settlements.
 
-Rule-based formula:
-Risk Score = 40% Hazard + 25% Exposure + 20% Vulnerability + 15% Trend
+Round-2 Upgrade: Augments rule-based formula with ML landslide susceptibility.
+
+Hybrid formula:
+  Risk Score = 40% Hazard_ML + 25% Exposure + 20% Vulnerability + 15% Trend
+
+Where Hazard_ML blends:
+  - ML Random Forest landslide susceptibility probability (60% weight)
+  - Rule-based hazard sub-components (40% weight)
 
 Risk Levels:
-80–100: CRITICAL
-60–79:  HIGH
-40–59:  MODERATE
-0–39:   LOW
+  80–100: CRITICAL
+  60–79:  HIGH
+  40–59:  MODERATE
+  0–39:   LOW
 """
 from typing import Dict, Any, List, Tuple
 from app.config import settings
 from app.schemas.settlement import RiskFactor
+from app.services.ml_risk_model import (
+    predict_landslide_susceptibility,
+    get_settlement_ml_features,
+    assess_data_quality,
+)
 
 
 def compute_risk_level(score: float) -> str:
@@ -28,6 +39,7 @@ def compute_risk_level(score: float) -> str:
 def evaluate_settlement_risk(settlement_dict: Dict[str, Any]) -> Tuple[float, str, Dict[str, float], List[RiskFactor], str]:
     """
     Computes transparent risk score, components, and factor explanations.
+    Now augmented with ML landslide susceptibility probability.
     """
     landslide = float(settlement_dict.get("landslide_risk", 50))
     rainfall = float(settlement_dict.get("rainfall_risk", 50))
@@ -37,12 +49,18 @@ def evaluate_settlement_risk(settlement_dict: Dict[str, Any]) -> Tuple[float, st
     
     households = int(settlement_dict.get("households", 100))
     priority_hh = int(settlement_dict.get("priority_households", 20))
-    
-    # 1. Hazard Component (0–100): 50% Landslide Susceptibility + 30% Rainfall Runoff + 20% Slope Gradient
-    hazard_score = (0.50 * landslide) + (0.30 * rainfall) + (0.20 * slope)
+
+    # ── ML Susceptibility Prediction ──────────────────────────────────────
+    ml_features = get_settlement_ml_features(settlement_dict)
+    ml_result = predict_landslide_susceptibility(ml_features)
+    ml_susceptibility = ml_result["ml_susceptibility_score"]  # 0-100
+
+    # 1. Hazard Component (0–100): Hybrid ML + Rule-based
+    #    60% ML susceptibility + 40% original rule-based sub-formula
+    rule_hazard = (0.50 * landslide) + (0.30 * rainfall) + (0.20 * slope)
+    hazard_score = (0.60 * ml_susceptibility) + (0.40 * rule_hazard)
 
     # 2. Exposure Component (0–100): Density & Priority Households concentration
-    # Normalize households (0-1000 range) & priority ratio
     priority_ratio = (priority_hh / max(households, 1)) * 100.0
     hh_scale = min(100.0, (households / 600.0) * 100.0)
     exposure_score = (0.60 * priority_ratio) + (0.40 * hh_scale)
@@ -69,14 +87,18 @@ def evaluate_settlement_risk(settlement_dict: Dict[str, Any]) -> Tuple[float, st
     vuln_contrib = round(settings.WEIGHT_VULNERABILITY * vulnerability_score, 1)
     trend_contrib = round(settings.WEIGHT_TREND * trend_score, 1)
 
+    # Top risk drivers from ML model
+    top_drivers = ml_result.get("top_risk_drivers", [])
+    top_driver_names = ", ".join([d["feature"].replace("_", " ").title() for d in top_drivers[:2]])
+
     factors: List[RiskFactor] = [
         RiskFactor(
-            name="Hazard & Debris Flow",
+            name="Hazard & Debris Flow (ML-Augmented)",
             factor="hazard",
             value=round(hazard_score, 1),
             contribution=hazard_contrib,
             contribution_percentage=round((hazard_contrib / max(total_risk, 0.1)) * 100.0, 1),
-            explanation=f"High slope gradient (>30°) and intense precipitation saturation driving landslide susceptibility."
+            explanation=f"ML landslide susceptibility: {ml_susceptibility}% (RF model). Key drivers: {top_driver_names}. Rule-based hazard: {round(rule_hazard, 1)}/100."
         ),
         RiskFactor(
             name="Population & Priority Exposure",
@@ -108,13 +130,36 @@ def evaluate_settlement_risk(settlement_dict: Dict[str, Any]) -> Tuple[float, st
         "hazard_score": round(hazard_score, 1),
         "exposure_score": round(exposure_score, 1),
         "vulnerability_score": round(vulnerability_score, 1),
-        "trend_score": round(trend_score, 1)
+        "trend_score": round(trend_score, 1),
     }
 
     summary = (
         f"Settlement evaluated at {total_risk}/100 ({risk_level} RISK). "
+        f"ML landslide susceptibility: {ml_susceptibility}% (Random Forest, {ml_result['model_version']}). "
         f"Hazard contribution accounts for {hazard_contrib} pts, followed by exposure ({exposure_contrib} pts). "
         f"{'Immediate relocation planning recommended.' if total_risk >= settings.RISK_HIGH else 'Targeted structural mitigation and monitoring required.'}"
     )
 
     return total_risk, risk_level, components, factors, summary
+
+
+def evaluate_settlement_risk_with_ml_details(settlement_dict: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extended evaluation returning ML details, data quality, and provenance.
+    Used by settlement detail and /why endpoints for Round-2 enrichment.
+    """
+    total_risk, risk_level, components, factors, summary = evaluate_settlement_risk(settlement_dict)
+
+    ml_features = get_settlement_ml_features(settlement_dict)
+    ml_result = predict_landslide_susceptibility(ml_features)
+    quality_info = assess_data_quality(settlement_dict)
+
+    return {
+        "risk_score": total_risk,
+        "risk_level": risk_level,
+        "components": components,
+        "factors": factors,
+        "summary": summary,
+        "ml_prediction": ml_result,
+        "data_quality": quality_info,
+    }

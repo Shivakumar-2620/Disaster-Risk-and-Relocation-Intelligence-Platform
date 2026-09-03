@@ -13,7 +13,7 @@ from app.schemas.settlement import (
     SettlementWhyResponse,
 )
 from app.schemas.site import SiteResponse
-from app.services.risk_engine import evaluate_settlement_risk
+from app.services.risk_engine import evaluate_settlement_risk, evaluate_settlement_risk_with_ml_details
 from app.services.relocation_engine import evaluate_site_revalidation
 
 router = APIRouter(prefix="/api", tags=["Settlements"])
@@ -47,7 +47,7 @@ def get_settlement_details(settlement_id: int, db: Session = Depends(get_db)):
         "priority_households": settlement.priority_households,
     }
 
-    score, level, components, factors, explanation = evaluate_settlement_risk(st_dict)
+    result = evaluate_settlement_risk_with_ml_details(st_dict)
 
     return SettlementDetailResponse(
         id=settlement.id,
@@ -63,14 +63,16 @@ def get_settlement_details(settlement_id: int, db: Session = Depends(get_db)):
         historical_risk=settlement.historical_risk,
         housing_vulnerability=settlement.housing_vulnerability,
         description=settlement.description,
-        risk_score=score,
-        risk_level=level,
-        hazard_score=components["hazard_score"],
-        exposure_score=components["exposure_score"],
-        vulnerability_score=components["vulnerability_score"],
-        trend_score=components["trend_score"],
-        factors=factors,
-        explanation=explanation,
+        risk_score=result["risk_score"],
+        risk_level=result["risk_level"],
+        hazard_score=result["components"]["hazard_score"],
+        exposure_score=result["components"]["exposure_score"],
+        vulnerability_score=result["components"]["vulnerability_score"],
+        trend_score=result["components"]["trend_score"],
+        factors=result["factors"],
+        explanation=result["summary"],
+        ml_prediction=result["ml_prediction"],
+        data_quality=result["data_quality"],
     )
 
 
@@ -93,15 +95,17 @@ def get_settlement_why_explanation(settlement_id: int, db: Session = Depends(get
         "priority_households": settlement.priority_households,
     }
 
-    score, level, _, factors, explanation = evaluate_settlement_risk(st_dict)
+    result = evaluate_settlement_risk_with_ml_details(st_dict)
 
     return SettlementWhyResponse(
         settlement_id=settlement.id,
         settlement_name=settlement.name,
-        risk_score=score,
-        risk_level=level,
-        factors=factors,
-        summary_explanation=explanation,
+        risk_score=result["risk_score"],
+        risk_level=result["risk_level"],
+        factors=result["factors"],
+        summary_explanation=result["summary"],
+        ml_prediction=result["ml_prediction"],
+        data_quality=result["data_quality"],
     )
 
 

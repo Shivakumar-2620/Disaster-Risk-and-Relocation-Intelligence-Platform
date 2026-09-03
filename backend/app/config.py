@@ -32,9 +32,14 @@ class Settings(BaseSettings):
     DEST_PASSED: int = 80
     DEST_CONDITIONAL: int = 60
 
-    # ── Scenario bounds ────────────────────────────────────────────
-    SCENARIO_MIN_RAINFALL: int = -10
-    SCENARIO_MAX_RAINFALL: int = 30
+    # ── Scenario bounds (expanded for Round-2 multi-variable engine) ──────
+    SCENARIO_MIN_RAINFALL: int = -20
+    SCENARIO_MAX_RAINFALL: int = 50
+
+    # ── Hard constraint thresholds (Tier-1 disqualification) ───────────────
+    HARD_CONSTRAINT_MAX_SLOPE: float = 12.0        # degrees — reject sites steeper than this
+    HARD_CONSTRAINT_MIN_SCARP_BUFFER: float = 2.0  # km — reject sites closer to active scarp
+    HARD_CONSTRAINT_MAX_HAZARD_SCORE: float = 30.0 # 0-100 — reject sites with hazard above this
 
     # ── CORS origins ───────────────────────────────────────────────
     CORS_ORIGINS: list[str] = [

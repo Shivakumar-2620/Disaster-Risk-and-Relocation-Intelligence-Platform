@@ -1,5 +1,5 @@
 """Pydantic schemas for Settlements and Risk Factor explanations."""
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
 
 
@@ -43,6 +43,9 @@ class SettlementDetailResponse(SettlementResponse):
     trend_score: float
     factors: List[RiskFactor] = []
     explanation: str
+    # Round-2: ML prediction and data quality (additive, optional for backwards compat)
+    ml_prediction: Optional[Dict[str, Any]] = None
+    data_quality: Optional[Dict[str, Any]] = None
 
 
 class SettlementWhyResponse(BaseModel):
@@ -52,3 +55,6 @@ class SettlementWhyResponse(BaseModel):
     risk_level: str
     factors: List[RiskFactor]
     summary_explanation: str
+    # Round-2: ML prediction and data quality (additive, optional for backwards compat)
+    ml_prediction: Optional[Dict[str, Any]] = None
+    data_quality: Optional[Dict[str, Any]] = None
