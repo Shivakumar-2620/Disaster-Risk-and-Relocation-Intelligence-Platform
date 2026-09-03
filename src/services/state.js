@@ -12,6 +12,8 @@ class AppState {
       selectedSettlementId: 'mundakkai',
       selectedSiteId: 'site_alpha',
       simulatedRainfallIntensity: 0,
+      simulatedRoadDisruption: false,
+      simulatedCapacityReduction: 0,
       mcdaWeights: {
         geological: 35,
         distance: 25,
@@ -101,6 +103,16 @@ class AppState {
 
   setRainfallIntensity(val) {
     this.state.simulatedRainfallIntensity = parseInt(val, 10);
+    this.notify();
+  }
+
+  setRoadDisruption(val) {
+    this.state.simulatedRoadDisruption = Boolean(val);
+    this.notify();
+  }
+
+  setCapacityReduction(val) {
+    this.state.simulatedCapacityReduction = parseInt(val, 10) || 0;
     this.notify();
   }
 

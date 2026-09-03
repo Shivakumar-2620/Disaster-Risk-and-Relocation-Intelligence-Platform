@@ -17,6 +17,7 @@ from app.services.relocation_engine import (
     build_revalidation_payload,
     compare_candidate_sites,
     evaluate_site_revalidation,
+    check_hard_constraints,
 )
 
 router = APIRouter(prefix="/api", tags=["Candidate Sites"])
@@ -49,8 +50,11 @@ def get_site_details(site_id: int, db: Session = Depends(get_db)):
         "cost_score": site.cost_score,
         "landslide_risk": site.landslide_risk,
         "flood_risk": site.flood_risk,
+        "terrain_score": site.terrain_score,
+        "distance_km_from_epicenter": site.distance_km_from_epicenter,
     }
     score, status, reasons = evaluate_site_revalidation(site_dict)
+    hard_result = check_hard_constraints(site_dict)
 
     return SiteDetailResponse(
         id=site.id,
@@ -72,6 +76,7 @@ def get_site_details(site_id: int, db: Session = Depends(get_db)):
         overall_score=score,
         status=status,
         reasons=reasons,
+        hard_constraints=hard_result,
         revalidation_notice="Recommended for further administrative verification.",
     )
 
