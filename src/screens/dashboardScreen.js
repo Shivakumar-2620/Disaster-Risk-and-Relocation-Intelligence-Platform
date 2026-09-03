@@ -9,6 +9,13 @@ export function renderDashboardScreen() {
   const { overviewStats } = WAYANAD_DATA.district;
   const settlements = WAYANAD_DATA.settlements;
 
+  // MODULE A: Household Impact & Relocation Inventory (spatial-join summary)
+  const criticalSettlements = settlements.filter(s => s.riskLevel === 'CRITICAL');
+  const affectedHouseholds = settlements.reduce((sum, s) => sum + s.displacedFamilies, 0);
+  const affectedPopulation = settlements.reduce((sum, s) => sum + s.totalPopulation, 0);
+  const highPriorityHouseholds = criticalSettlements.reduce((sum, s) => sum + s.displacedFamilies, 0);
+  const peopleRequiringRelocation = criticalSettlements.reduce((sum, s) => sum + s.totalPopulation, 0);
+
   return `
     <div class="p-4 md:p-margin-desktop max-w-7xl mx-auto flex flex-col gap-6">
       <!-- Title & Live Status Bar -->
@@ -85,8 +92,73 @@ export function renderDashboardScreen() {
         </div>
       </div>
 
-      <!-- Quick Action Navigation Tiles -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <!-- MODULE A: Household Impact & Relocation Inventory -->
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-outline-variant">
+          <div class="flex items-center gap-2 text-xs font-mono text-emerald-800 dark:text-emerald-400 font-semibold mb-1">
+            <span class="material-symbols-outlined text-sm">groups</span>
+            MODULE A — HOUSEHOLD IMPACT & RELOCATION INVENTORY
+          </div>
+          <h3 class="font-headline-sm text-base font-bold text-primary">Red-Zone Household & Population Accounting</h3>
+          <p class="text-xs text-on-surface-variant mt-0.5">Point-in-polygon / spatial-join of household points against hazard severity x vulnerability x population</p>
+        </div>
+
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-outline-variant/60">
+          <div class="bg-surface-container-lowest p-5">
+            <div class="text-slate-500 text-xs font-semibold mb-1">Affected Households</div>
+            <div class="font-display-md text-3xl font-bold text-rose-600">${affectedHouseholds.toLocaleString()}</div>
+            <div class="mt-1 text-[11px] text-slate-500">Inside hazard-impact polygons</div>
+          </div>
+          <div class="bg-surface-container-lowest p-5">
+            <div class="text-slate-500 text-xs font-semibold mb-1">Affected Population</div>
+            <div class="font-display-md text-3xl font-bold text-on-surface">${affectedPopulation.toLocaleString()}</div>
+            <div class="mt-1 text-[11px] text-slate-500">Residents in impact zones</div>
+          </div>
+          <div class="bg-surface-container-lowest p-5">
+            <div class="text-slate-500 text-xs font-semibold mb-1">High-Priority Households</div>
+            <div class="font-display-md text-3xl font-bold text-amber-600">${highPriorityHouseholds.toLocaleString()}</div>
+            <div class="mt-1 text-[11px] text-slate-500">CRITICAL-tier settlements only</div>
+          </div>
+          <div class="bg-surface-container-lowest p-5">
+            <div class="text-slate-500 text-xs font-semibold mb-1">People Requiring Relocation</div>
+            <div class="font-display-md text-3xl font-bold text-primary">${peopleRequiringRelocation.toLocaleString()}</div>
+            <div class="mt-1 text-[11px] text-slate-500">100% relocation mandated</div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-data-tabular">
+            <thead class="bg-surface-container-high text-on-surface-variant uppercase text-[11px] tracking-wider border-t border-outline-variant">
+              <tr>
+                <th class="py-3 px-4 font-semibold">Settlement</th>
+                <th class="py-3 px-4 font-semibold">Risk</th>
+                <th class="py-3 px-4 font-semibold">Households</th>
+                <th class="py-3 px-4 font-semibold">Population</th>
+                <th class="py-3 px-4 font-semibold">Priority Cohorts (Elderly + Children)</th>
+                <th class="py-3 px-4 font-semibold">Household-Level "Why?" — Top Drivers</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant">
+              ${settlements.map(s => `
+                <tr class="hover:bg-surface-container-low transition">
+                  <td class="py-3 px-4 font-semibold text-on-surface">${s.name} <span class="text-[10px] text-slate-400 font-mono">(${s.zoneCode})</span></td>
+                  <td class="py-3 px-4">
+                    <span class="inline-flex items-center gap-1 font-bold px-2 py-0.5 rounded text-[11px] ${s.riskLevel === 'CRITICAL' ? 'bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'}">
+                      ${s.riskScore}/10 (${s.riskLevel})
+                    </span>
+                  </td>
+                  <td class="py-3 px-4 font-bold text-on-surface">${s.displacedFamilies}</td>
+                  <td class="py-3 px-4 text-on-surface">${s.totalPopulation}</td>
+                  <td class="py-3 px-4 text-on-surface">${s.demographics.elderlyAndDisabled + s.demographics.childrenUnder10} persons <span class="text-[10px] text-slate-400">(${s.demographics.elderlyAndDisabled} elderly/disabled + ${s.demographics.childrenUnder10} children)</span></td>
+                  <td class="py-3 px-4 text-on-surface-variant leading-snug">${s.topDrivers[0]} • ${s.topDrivers[1]}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Quick Action Navigation Tiles -->      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <a href="#map" class="group bg-surface-container hover:bg-secondary-container/40 p-4 rounded-xl border border-outline-variant transition flex items-center gap-3">
           <div class="w-10 h-10 rounded-lg bg-emerald-800 text-white flex items-center justify-center group-hover:scale-105 transition">
             <span class="material-symbols-outlined">map</span>

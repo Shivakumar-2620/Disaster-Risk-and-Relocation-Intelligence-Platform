@@ -12,6 +12,23 @@ export function renderSiteRevalidationScreen() {
 
   const allApproved = signoffs.revenue && signoffs.forest && signoffs.pwd && signoffs.ksdma;
 
+  // MODULE B: Relocation Validation & Destination Ranking (MVP weights)
+  // Same hazard/risk calculus applied to origin AND destination: a destination
+  // never passes simply because it lies outside the original red zone.
+  const DESTINATION_DEMAND = 1760; // Mundakkai + Chooralmala displaced households
+  const LIVELIHOOD_SCORES = { site_alpha: 88, site_beta: 74, site_gamma: 61 };
+  const SOCIAL_SCORES = { site_alpha: 92, site_beta: 78, site_gamma: 58 };
+  const destinationSuitability = WAYANAD_DATA.candidateResettlementSites.map(s => {
+    const safety = Math.round(s.soilStabilityScore * 10);
+    const infrastructure = Math.round(((s.utilityReadinessScore + s.connectivityScore) / 2) * 10);
+    const livelihood = LIVELIHOOD_SCORES[s.id] || 70;
+    const social = SOCIAL_SCORES[s.id] || 70;
+    const capacity = Math.min(100, Math.round((s.capacityHouseholds / DESTINATION_DEMAND) * 100));
+    const total = Math.round(0.4 * safety + 0.2 * infrastructure + 0.2 * livelihood + 0.1 * social + 0.1 * capacity);
+    const verdict = total >= 80 ? 'PASSED' : total >= 60 ? 'CONDITIONAL' : 'REJECTED';
+    return { site: s, safety, infrastructure, livelihood, social, capacity, total, verdict };
+  });
+
   return `
     <div class="p-4 md:p-margin-desktop max-w-7xl mx-auto flex flex-col gap-6">
       <!-- Header -->
@@ -71,8 +88,73 @@ export function renderSiteRevalidationScreen() {
         </span>
       </div>
 
-      <!-- Tier-1 Statutory Hard Constraints Checklist -->
-      <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm space-y-4">
+      <!-- MODULE B: Relocation Validation & Destination Ranking -->
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-outline-variant">
+          <div class="flex items-center gap-2 text-xs font-mono text-emerald-800 dark:text-emerald-400 font-semibold mb-1">
+            <span class="material-symbols-outlined text-sm">how_to_reg</span>
+            MODULE B — RELOCATION VALIDATION & DESTINATION RANKING
+          </div>
+          <h3 class="font-headline-sm text-base font-bold text-primary">Destination Suitability Scoring (MVP Weight Model)</h3>
+          <p class="text-xs text-on-surface-variant mt-0.5">No site passes merely because it is outside the red zone — the same hazard/risk calculation is applied at origin and destination.</p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-px bg-outline-variant/60">
+          <div class="lg:col-span-2 bg-surface-container-lowest p-5">
+            <h4 class="font-bold text-xs text-primary mb-3 uppercase tracking-wider">MVP Factor Weights & Evidence</h4>
+            <div class="space-y-2 text-xs">
+              <div class="flex items-center justify-between gap-3 border-b border-outline-variant pb-2">
+                <div><div class="font-semibold text-on-surface">Safety</div><div class="text-[11px] text-slate-500">Flood / landslide / hazard risk at site</div></div>
+                <span class="font-mono font-bold text-primary">40%</span>
+              </div>
+              <div class="flex items-center justify-between gap-3 border-b border-outline-variant pb-2">
+                <div><div class="font-semibold text-on-surface">Infrastructure & Services</div><div class="text-[11px] text-slate-500">Road, water, electricity, school, healthcare</div></div>
+                <span class="font-mono font-bold text-primary">20%</span>
+              </div>
+              <div class="flex items-center justify-between gap-3 border-b border-outline-variant pb-2">
+                <div><div class="font-semibold text-on-surface">Livelihood</div><div class="text-[11px] text-slate-500">Work / agriculture / fishing / market access</div></div>
+                <span class="font-mono font-bold text-primary">20%</span>
+              </div>
+              <div class="flex items-center justify-between gap-3 border-b border-outline-variant pb-2">
+                <div><div class="font-semibold text-on-surface">Social / Accessibility</div><div class="text-[11px] text-slate-500">Travel distance, accessibility, community continuity</div></div>
+                <span class="font-mono font-bold text-primary">10%</span>
+              </div>
+              <div class="flex items-center justify-between gap-3">
+                <div><div class="font-semibold text-on-surface">Capacity</div><div class="text-[11px] text-slate-500">Available capacity vs relocation population</div></div>
+                <span class="font-mono font-bold text-primary">10%</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="lg:col-span-3 bg-surface-container-lowest p-5">
+            <h4 class="font-bold text-xs text-primary mb-3 uppercase tracking-wider">Site Suitability Scores (0-100)</h4>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-[11px] font-data-tabular">
+                <thead class="uppercase text-[10px] tracking-wider text-slate-500 border-b border-outline-variant">
+                  <tr>
+                    <th class="py-2 pr-2 font-semibold">Factor</th>
+                    ${destinationSuitability.map(d => `<th class="py-2 px-2 font-semibold ${d.site.id === site.id ? 'text-primary' : ''}">${d.site.code}</th>`).join('')}
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant">
+                  <tr><td class="py-2 pr-2 text-slate-600 dark:text-slate-400">Safety (x40%)</td>${destinationSuitability.map(d => `<td class="py-2 px-2 font-mono text-on-surface">${d.safety}</td>`).join('')}</tr>
+                  <tr><td class="py-2 pr-2 text-slate-600 dark:text-slate-400">Infrastructure & Services (x20%)</td>${destinationSuitability.map(d => `<td class="py-2 px-2 font-mono text-on-surface">${d.infrastructure}</td>`).join('')}</tr>
+                  <tr><td class="py-2 pr-2 text-slate-600 dark:text-slate-400">Livelihood (x20%)</td>${destinationSuitability.map(d => `<td class="py-2 px-2 font-mono text-on-surface">${d.livelihood}</td>`).join('')}</tr>
+                  <tr><td class="py-2 pr-2 text-slate-600 dark:text-slate-400">Social / Accessibility (x10%)</td>${destinationSuitability.map(d => `<td class="py-2 px-2 font-mono text-on-surface">${d.social}</td>`).join('')}</tr>
+                  <tr><td class="py-2 pr-2 text-slate-600 dark:text-slate-400">Capacity (x10%)</td>${destinationSuitability.map(d => `<td class="py-2 px-2 font-mono text-on-surface">${d.capacity}</td>`).join('')}</tr>
+                  <tr class="bg-surface-container-low/60">
+                    <td class="py-2.5 pr-2 font-bold text-on-surface">TOTAL SUITABILITY</td>
+                    ${destinationSuitability.map(d => `<td class="py-2.5 px-2"><span class="font-mono font-bold text-sm ${d.site.id === site.id ? 'text-primary' : 'text-on-surface'}">${d.total}</span> <span class="ml-1 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold ${d.verdict === 'PASSED' ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' : d.verdict === 'CONDITIONAL' ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'}">${d.verdict}</span></td>`).join('')}
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-3 leading-relaxed">Capacity scored against ${DESTINATION_DEMAND.toLocaleString()} displaced households (Mundakkai + Chooralmala). Thresholds: PASSED >= 80, CONDITIONAL 60-79, REJECTED &lt; 60. Hard-constraint Tier-1 screening below applies independently and is disqualifying.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tier-1 Statutory Hard Constraints Checklist -->      <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-outline-variant pb-3">
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined text-primary text-xl">shield</span>
@@ -269,7 +351,7 @@ export function renderSiteRevalidationScreen() {
 export function setupSiteRevalidationEvents() {
   document.getElementById('revalidation-site-select')?.addEventListener('change', (e) => {
     appState.selectSite(e.target.value);
-    const mainEl = document.getElementById('screen-site-revalidation');
+    const mainEl = document.getElementById('main-content-container');
     if (mainEl) {
       mainEl.innerHTML = renderSiteRevalidationScreen();
       setupSiteRevalidationEvents();
@@ -282,7 +364,7 @@ export function setupSiteRevalidationEvents() {
       const dept = btn.dataset.dept;
       appState.toggleSignoff(site, dept);
       showToast(`Toggled statutory clearance for ${dept.toUpperCase()}`, 'info', 'SIGN-OFF UPDATED');
-      const mainEl = document.getElementById('screen-site-revalidation');
+      const mainEl = document.getElementById('main-content-container');
       if (mainEl) {
         mainEl.innerHTML = renderSiteRevalidationScreen();
         setupSiteRevalidationEvents();

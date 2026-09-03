@@ -588,4 +588,19 @@ export function setupLandingEvents() {
       }
     });
   }
+
+  // Fix: plain #section anchors are hijacked by the hash router, so the five
+  // module-section links (Relief Telemetry, Intelligence Modules, Risk
+  // Simulator, Model Township, Government Order) never scrolled. Smooth-scroll instead.
+  const SCROLL_SECTIONS = ['impact', 'features', 'simulator-preview', 'township-blueprint', 'governance'];
+  document.querySelectorAll('a[href^="#"]').forEach((link) => {
+    const targetId = link.getAttribute('href').slice(1);
+    if (SCROLL_SECTIONS.includes(targetId)) {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const target = document.getElementById(targetId);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+  });
 }

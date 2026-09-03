@@ -231,7 +231,7 @@ export function setupRiskProfileEvents() {
   document.getElementById('risk-profile-settlement-select')?.addEventListener('change', (e) => {
     appState.selectSettlement(e.target.value);
     // Re-render
-    const mainEl = document.getElementById('screen-risk-profile');
+    const mainEl = document.getElementById('main-content-container');
     if (mainEl) {
       mainEl.innerHTML = renderRiskProfileScreen();
       setupRiskProfileEvents();

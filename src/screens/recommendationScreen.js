@@ -5,7 +5,7 @@ import { WAYANAD_DATA } from '../data/wayanadData.js';
 import { appState } from '../services/state.js';
 
 export function renderRecommendationScreen() {
-  const { simulatedRainfallIntensity, simulatedRoadDisruption, simulatedCapacityReduction } = appState.getState();
+  const { simulatedRainfallIntensity, simulatedRoadDisruption, simulatedCapacityReduction, simulatedHazardBoundary } = appState.getState();
   
   // Find current stress matrix level based on simulatedRainfallIntensity
   const stress = WAYANAD_DATA.monsoonStressMatrix.find(m => m.rainfallIntensity === simulatedRainfallIntensity) || WAYANAD_DATA.monsoonStressMatrix[0];
@@ -21,6 +21,31 @@ export function renderRecommendationScreen() {
 
   const effectiveCapA = Math.round(1200 * (1 - (simulatedCapacityReduction || 0) / 100));
   const effectiveCapB = Math.round(1500 * (1 - (simulatedCapacityReduction || 0) / 100));
+
+  // MODULE C: What-If Relocation Simulation (household demand model)
+  // Baseline sample tract (Meppadi-Mundakkai micro-catchment): 126 households / 512 people.
+  // Rainfall +20% -> 174 / 703. Expanded hazard boundary -> 213 / 861.
+  const hazardBoundary = Boolean(simulatedHazardBoundary);
+  const RF_HH = { 0: 1, 25: 1.381, 50: 1.60, 75: 1.85, 100: 2.10 }[simulatedRainfallIntensity] || 1;
+  const RF_POP = { 0: 1, 25: 1.373, 50: 1.60, 75: 1.85, 100: 2.10 }[simulatedRainfallIntensity] || 1;
+  const BND_HH = hazardBoundary ? 1.6905 : 1;
+  const BND_POP = hazardBoundary ? 1.682 : 1;
+  const totalAvailableUnits = effectiveCapA + effectiveCapB;
+  const simScenario = (label, note, hhMult, popMult, bndHh, bndPop) => {
+    const households = Math.round(126 * hhMult * bndHh);
+    const population = Math.round(512 * popMult * bndPop);
+    const verdict = households <= effectiveCapA
+      ? { text: 'Site A sufficient', cls: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300' }
+      : households <= totalAvailableUnits
+        ? { text: 'Sites A + B required', cls: 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300' }
+        : { text: 'All candidate sites required (phased)', cls: 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300' };
+    return { label, note, households, population, verdict };
+  };
+  const simRows = [
+    simScenario('Normal (Baseline)', 'No perturbation', 1, 1, 1, 1),
+    simScenario('Rainfall Surge (+' + simulatedRainfallIntensity + '%)', 'Precipitation multiplier applied to sample tract', RF_HH, RF_POP, 1, 1),
+    simScenario('Expanded Hazard Boundary', 'River-flood / runout boundary widened to 500 m corridor', RF_HH, RF_POP, BND_HH, BND_POP),
+  ];
 
   return `
     <div class="p-4 md:p-margin-desktop max-w-7xl mx-auto flex flex-col gap-6">
@@ -59,7 +84,7 @@ export function renderRecommendationScreen() {
         </div>
 
         <!-- 3-Variable Sliders & Toggles Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5">
           <!-- Variable 1: Rainfall Surge -->
           <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant space-y-2">
             <div class="flex justify-between items-center text-xs font-semibold">
@@ -111,6 +136,27 @@ export function renderRecommendationScreen() {
               <span>25% Eco Buffer</span>
               <span>50% Heavy Setback</span>
             </div>
+          </div>
+
+          <!-- Variable 4: Hazard Boundary Toggle -->
+          <div class="bg-surface-container-low p-4 rounded-xl border border-outline-variant flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-center text-xs font-semibold mb-1">
+                <span class="text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                  <span class="material-symbols-outlined text-sm text-rose-600">water_flood</span> Hazard Boundary & Threshold
+                </span>
+                <span class="font-bold font-mono text-xs ${hazardBoundary ? 'text-rose-600' : 'text-emerald-600'}">
+                  ${hazardBoundary ? 'EXPANDED' : 'NORMAL'}
+                </span>
+              </div>
+              <p class="text-[11px] text-slate-500">Expand river-flood & runout corridor to 500 m threshold</p>
+            </div>
+            <label class="flex items-center gap-2 cursor-pointer mt-3 pt-2 border-t border-slate-200 dark:border-slate-800">
+              <input type="checkbox" id="hazard-boundary-toggle" ${hazardBoundary ? 'checked' : ''} class="w-4 h-4 text-primary rounded accent-primary cursor-pointer">
+              <span class="text-xs font-bold ${hazardBoundary ? 'text-rose-700 dark:text-rose-300' : 'text-slate-700 dark:text-slate-300'}">
+                ${hazardBoundary ? 'Expanded Boundary Active' : 'Expand Hazard Boundary'}
+              </span>
+            </label>
           </div>
         </div>
 
@@ -206,6 +252,46 @@ export function renderRecommendationScreen() {
         </div>
       </div>
 
+      <!-- MODULE C: What-If Relocation Simulation -->
+      <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
+        <div class="p-5 border-b border-outline-variant">
+          <div class="flex items-center gap-2 text-xs font-mono text-emerald-800 dark:text-emerald-400 font-semibold mb-1">
+            <span class="material-symbols-outlined text-sm">monitoring</span>
+            MODULE C — WHAT-IF RELOCATION SIMULATION
+          </div>
+          <h3 class="font-headline-sm text-base font-bold text-primary">Stress-Testable Relocation Demand (Household / Population Model)</h3>
+          <p class="text-xs text-on-surface-variant mt-0.5">Change rainfall intensity, hazard boundary, or destination capacity — then rerun the same functions and compare results.</p>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-data-tabular">
+            <thead class="bg-surface-container-high text-on-surface-variant uppercase text-[11px] tracking-wider border-b border-outline-variant">
+              <tr>
+                <th class="py-3 px-4 font-semibold">Scenario</th>
+                <th class="py-3 px-4 font-semibold">Affected Households</th>
+                <th class="py-3 px-4 font-semibold">Affected Population</th>
+                <th class="py-3 px-4 font-semibold">Required Units (vs ${effectiveCapA} + ${effectiveCapB} effective)</th>
+                <th class="py-3 px-4 font-semibold">Capacity Verdict</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-outline-variant">
+              ${simRows.map(r => `
+                <tr class="hover:bg-surface-container-low transition">
+                  <td class="py-3 px-4 font-semibold text-on-surface">${r.label}<div class="text-[10px] text-slate-400 font-normal">${r.note}</div></td>
+                  <td class="py-3 px-4 font-bold font-mono text-rose-600">${r.households.toLocaleString()} HH</td>
+                  <td class="py-3 px-4 font-mono text-on-surface">${r.population.toLocaleString()} people</td>
+                  <td class="py-3 px-4 font-mono text-on-surface">${r.households.toLocaleString()}</td>
+                  <td class="py-3 px-4"><span class="inline-flex items-center gap-1 font-bold px-2.5 py-1 rounded text-[11px] ${r.verdict.cls}">${r.verdict.text}</span></td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+        <div class="px-4 py-3 text-[10px] text-slate-400 border-t border-outline-variant leading-relaxed">
+          Sample tract: Meppadi-Mundakkai micro-catchment (baseline 126 households / 512 people). Reference points: Rainfall +20% → 174 / 703; Expanded hazard boundary → 213 / 861. Effective units = planned capacity minus buffer-capacity loss slider.
+        </div>
+      </div>
+
       <!-- Comparison Matrix Table -->
       <div class="bg-surface-container-lowest rounded-2xl border border-outline-variant shadow-sm overflow-hidden">
         <div class="p-5 border-b border-outline-variant">
@@ -282,7 +368,7 @@ export function setupRecommendationEvents() {
   const capSlider = document.getElementById('capacity-reduction-slider');
 
   function triggerReRender() {
-    const mainEl = document.getElementById('screen-recommendation');
+    const mainEl = document.getElementById('main-content-container');
     if (mainEl) {
       mainEl.innerHTML = renderRecommendationScreen();
       setupRecommendationEvents();
@@ -306,6 +392,14 @@ export function setupRecommendationEvents() {
   if (capSlider) {
     capSlider.addEventListener('input', (e) => {
       appState.setCapacityReduction(e.target.value);
+      triggerReRender();
+    });
+  }
+
+  const hazardBoundaryToggle = document.getElementById('hazard-boundary-toggle');
+  if (hazardBoundaryToggle) {
+    hazardBoundaryToggle.addEventListener('change', (e) => {
+      appState.setHazardBoundary(e.target.checked);
       triggerReRender();
     });
   }

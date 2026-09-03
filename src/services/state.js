@@ -14,6 +14,7 @@ class AppState {
       simulatedRainfallIntensity: 0,
       simulatedRoadDisruption: false,
       simulatedCapacityReduction: 0,
+      simulatedHazardBoundary: false,
       mcdaWeights: {
         geological: 35,
         distance: 25,
@@ -113,6 +114,11 @@ class AppState {
 
   setCapacityReduction(val) {
     this.state.simulatedCapacityReduction = parseInt(val, 10) || 0;
+    this.notify();
+  }
+
+  setHazardBoundary(val) {
+    this.state.simulatedHazardBoundary = Boolean(val);
     this.notify();
   }
 

@@ -183,7 +183,7 @@ export function setupRelocationToolEvents() {
     document.getElementById('weight-util-val').textContent = `${weights.utility}%`;
 
     // Re-render container
-    const mainEl = document.getElementById('screen-relocation-tool');
+    const mainEl = document.getElementById('main-content-container');
     if (mainEl) {
       mainEl.innerHTML = renderRelocationToolScreen();
       setupRelocationToolEvents();
