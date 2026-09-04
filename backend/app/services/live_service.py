@@ -11,6 +11,7 @@ truthfully label LIVE vs DEMO data and never overclaim.
 from __future__ import annotations
 
 import time
+from collections import deque
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, Optional
 
@@ -20,13 +21,32 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.database import get_db
 from app.models.settlement import Settlement
-from app.services.weather_providers import get_weather_provider
+from app.services.weather_providers import DemoProvider, get_weather_provider
 from app.services.risk_engine import evaluate_settlement_risk
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
 # In-memory cache of the last successful observation (failure handling).
 _last_good: Dict[str, Any] = {}
+
+# Bounded per-settlement history of platform risk recalculation. The trend arrow is
+# derived from ACTUAL successive polls (observation -> risk recalculation), never
+# fabricated as a prediction.
+_RISK_HISTORY: Dict[str, deque] = {}
+
+
+def _record_risk(settlement_id: Any, ts: str, rainfall: Optional[float], score: float) -> str:
+    """Append this recalculation; return the trend vs the previous actual poll."""
+    hist = _RISK_HISTORY.setdefault(str(settlement_id), deque(maxlen=8))
+    hist.append({"ts": ts, "rainfall_24h_mm": rainfall, "risk_score": score})
+    if len(hist) < 2:
+        return "stable"
+    prev = hist[-2]["risk_score"]
+    if score - prev > 0.5:
+        return "increasing"
+    if score - prev < -0.5:
+        return "decreasing"
+    return "stable"
 
 
 def _now_ist() -> datetime:
@@ -62,7 +82,9 @@ def get_live_weather() -> Dict[str, Any]:
         return payload
 
     if settings.LIVE_FALLBACK_TO_DEMO:
-        obs = get_weather_provider().get_weather()
+        # No last-good cached: fall back to clearly-labelled simulated values so the
+        # rainfall layer keeps rendering numbers while the feed is down.
+        obs = DemoProvider().get_weather()
         obs["status"] = "STALE"
         obs["note"] = "Feed unavailable — showing simulated fallback data."
         return obs
@@ -148,6 +170,7 @@ def get_live_risk_map(db: Session = Depends(get_db)) -> Dict[str, Any]:
 
     settlements = db.query(Settlement).all()
     features = []
+    now_ts = _iso_ist()
     for s in settlements:
         st_dict = {
             "landslide_risk": s.landslide_risk,
@@ -159,20 +182,24 @@ def get_live_risk_map(db: Session = Depends(get_db)) -> Dict[str, Any]:
             "priority_households": s.priority_households,
         }
         score, level, components, factors, summary = evaluate_settlement_risk(st_dict)
+        hist = _RISK_HISTORY.get(str(s.id))
+        prev_poll = hist[-1]["risk_score"] if hist else None
+        trend = _record_risk(s.id, now_ts, rain, score)
         features.append(
             {
                 "type": "Feature",
                 "properties": {
                     "id": s.id,
                     "name": s.name,
-                    "risk_score": score,
+                    "risk_score": round(score, 1),
                     "risk_level": level,
                     "households": s.households,
                     "priority_households": s.priority_households,
-                    "previous_risk_score": s.risk_score,
+                    "previous_risk_score": round(prev_poll, 1) if prev_poll is not None else round(s.risk_score, 1),
                     "previous_risk_level": s.risk_level,
                     "rainfall_24h_mm": rain,
-                    "trend": "increasing" if score > s.risk_score + 1.0 else "stable",
+                    "observed_at": weather.get("timestamp"),
+                    "trend": trend,
                 },
                 "geometry": {"type": "Point", "coordinates": [s.longitude, s.latitude]},
             }
@@ -180,6 +207,7 @@ def get_live_risk_map(db: Session = Depends(get_db)) -> Dict[str, Any]:
 
     return {
         "updated_at": _iso_ist(),
+        "risk_calculated_at": _iso_ist(),
         "source": weather.get("source"),
         "status": weather.get("status"),
         "data_age_minutes": weather.get("data_age_minutes", 0),
@@ -209,7 +237,7 @@ def get_live_status() -> Dict[str, Any]:
                 "data_age_minutes": weather.get("data_age_minutes", age),
             },
             "base_map": {"provider": "OpenStreetMap", "status": "LIVE"},
-            "risk": {"provider": "Platform Risk Engine", "status": "LIVE"},
+            "risk": {"provider": "Platform Risk Engine", "status": "CALCULATED", "last_update": weather.get("timestamp")},
         },
         "refresh_interval_seconds": settings.LIVE_REFRESH_INTERVAL_SECONDS,
         "stale_after_minutes": settings.LIVE_STALE_AFTER_MINUTES,

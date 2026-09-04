@@ -186,17 +186,21 @@ class WayanadMapService {
       const p = f.properties || {};
       const [lng, lat] = f.geometry ? f.geometry.coordinates : [0, 0];
       const color = p.risk_level === 'CRITICAL' ? '#dc2626' : p.risk_level === 'HIGH' ? '#f59e0b' : '#10b981';
-      const isRising = p.trend === 'increasing';
+      const trendLabel = p.trend === 'increasing'
+        ? '&#8593; INCREASING'
+        : p.trend === 'decreasing'
+          ? '&#8595; DECREASING'
+          : '&#8594; STABLE';
       const circle = L.circle([lat, lng], {
         radius: 520 + (p.households || 0) * 0.4,
         color: color,
         fillColor: color,
         fillOpacity: 0.12,
         weight: 2,
-        dashArray: isRising ? '3, 3' : null
+        dashArray: p.trend !== 'stable' && p.trend != null ? '3, 3' : null
       });
       circle.bindTooltip(
-        `<b>${p.name}</b><br>Live Risk: ${p.risk_score} ${p.risk_level} ${isRising ? '&#8593; INCREASING' : ''}<br>Prev: ${p.previous_risk_score} · Rain ${p.rainfall_24h_mm ?? '—'} mm/24h`,
+        `<b>${p.name}</b><br>Live Risk: ${p.risk_score} ${p.risk_level} · ${trendLabel}<br>Prev: ${p.previous_risk_score} · Rain ${p.rainfall_24h_mm ?? '—'} mm/24h`,
         { sticky: true }
       );
       circle.on('click', () => this.openSettlement(p.id));
@@ -358,7 +362,9 @@ class WayanadMapService {
     const trend = liveProps ? liveProps.trend : null;
     const trendHtml = trend === 'increasing'
       ? `<span class="inline-flex items-center gap-1 text-red-600 font-bold">&#8593; RISK INCREASING</span>`
-      : `<span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">Stable</span>`;
+      : trend === 'decreasing'
+        ? `<span class="inline-flex items-center gap-1 text-amber-600 font-bold">&#8595; RISK DECREASING</span>`
+        : `<span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">&#8594; Stable</span>`;
     const liveMode = isLiveSource(live.liveWeather && live.liveWeather.source) ? 'LIVE' : 'DEMO';
 
     if (type === 'settlement') {

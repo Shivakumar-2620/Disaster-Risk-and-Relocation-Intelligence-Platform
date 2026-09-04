@@ -6,8 +6,9 @@ normalized payload containing source, timestamp, status, and data_age_minutes so
 UI can truthfully show whether the data is LIVE or simulated/demo.
 
 Providers:
-  - IMDProvider  : calls the official IMD API (credentials via env, no hard-coding).
-  - DemoProvider : produces clearly-labelled simulated observations for development/demo.
+  - IMDProvider       : calls the official IMD API (credentials via env, no hard-coding).
+  - WeatherAPIProvider: calls WeatherAPI.com (key via env) — same live key used by the frontend demo.
+  - DemoProvider      : produces clearly-labelled simulated observations for development/demo.
 
 Selection is done by `get_weather_provider()` based on settings.WEATHER_PROVIDER.
 """
@@ -15,6 +16,7 @@ from __future__ import annotations
 
 import json
 import time
+import urllib.parse
 import urllib.request
 from abc import ABC, abstractmethod
 from datetime import datetime, timezone, timedelta
@@ -111,6 +113,63 @@ class IMDProvider(WeatherProvider):
         }
 
 
+class WeatherAPIProvider(WeatherProvider):
+    """Live observations from WeatherAPI.com (https://www.weatherapi.com).
+
+    The frontend demo used the same provider directly; wiring it here lets the
+    observation enter through the FastAPI gateway -> validation -> risk engine
+    -> GeoJSON instead of being fetched from the browser. Credentials come from
+    settings (WEATHER_API_KEY) — never hard-coded.
+    """
+
+    source = "WEATHERAPI"
+    _BASE = "https://api.weatherapi.com/v1/forecast.json"
+
+    def _unavailable(self, error: str) -> Dict[str, Any]:
+        return {
+            **self._base_payload("KALPETTA-AWS"),
+            "status": "UNAVAILABLE",
+            "rainfall_24h_mm": None,
+            "rainfall_now_mm": None,
+            "temperature_c": None,
+            "humidity_pct": None,
+            "wind_kph": None,
+            "forecast": "",
+            "error": error,
+        }
+
+    def get_weather(self) -> Dict[str, Any]:
+        if not settings.WEATHER_API_KEY:
+            return self._unavailable("WEATHER_API_KEY not configured")
+        url = (
+            f"{self._BASE}?q={urllib.parse.quote(settings.WEATHER_API_QUERY)}"
+            f"&days=1&aqi=no&alerts=yes&key={urllib.parse.quote(settings.WEATHER_API_KEY)}"
+        )
+        try:
+            req = urllib.request.Request(url, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                j = json.loads(resp.read().decode("utf-8"))
+        except Exception:
+            return self._unavailable("WeatherAPI request failed")
+        cur = j.get("current") or {}
+        fday = ((j.get("forecast") or {}).get("forecastday") or [{}])[0]
+        day = fday.get("day") or {}
+        loc = j.get("location") or {}
+        payload = self._base_payload(loc.get("name") or "Kalpetta")
+        payload.update(
+            {
+                "rainfall_24h_mm": float(day.get("totalprecip_mm") or 0.0),
+                "rainfall_now_mm": float(cur.get("precip_mm") or 0.0),
+                "temperature_c": float(cur.get("temp_c") or 0.0),
+                "humidity_pct": float(cur.get("humidity") or 0.0),
+                "wind_kph": float(cur.get("wind_kph") or 0.0),
+                "forecast": (cur.get("condition") or {}).get("text") or "",
+                "observed_local": loc.get("localtime") or "",
+            }
+        )
+        return payload
+
+
 class DemoProvider(WeatherProvider):
     """Clearly-labelled simulated observations for development / demo mode."""
 
@@ -136,6 +195,9 @@ class DemoProvider(WeatherProvider):
 
 def get_weather_provider() -> WeatherProvider:
     """Factory — returns the configured weather provider."""
-    if settings.WEATHER_PROVIDER.lower() == "imd":
+    provider = settings.WEATHER_PROVIDER.lower()
+    if provider == "imd":
         return IMDProvider()
+    if provider == "weatherapi":
+        return WeatherAPIProvider()
     return DemoProvider()

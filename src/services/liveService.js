@@ -86,6 +86,8 @@ class DemoProvider {
   }
 
   getRiskMap(weather) {
+    // Poll-to-poll history so the fallback trend reflects successive recalculations.
+    this._hist = this._hist || {};
     const rain = weather && weather.rainfall_24h_mm;
     let rainFactor = 0;
     if (rain != null) {
@@ -102,6 +104,13 @@ class DemoProvider {
       const delta = Math.round(rainFactor * 12); // modest live uplift for demo
       const score = Math.min(100, s.riskScore * 10 + delta);
       const level = score >= 80 ? 'CRITICAL' : score >= 60 ? 'HIGH' : 'MODERATE';
+      const prev = this._hist[s.id];
+      this._hist[s.id] = score;
+      const trend = prev == null
+        ? 'stable'
+        : score - prev > 0.5 ? 'increasing'
+          : score - prev < -0.5 ? 'decreasing'
+            : 'stable';
       return {
         type: 'Feature',
         properties: {
@@ -111,10 +120,10 @@ class DemoProvider {
           risk_level: level,
           households: s.displacedFamilies,
           priority_households: s.demographics.elderlyAndDisabled + s.demographics.childrenUnder10,
-          previous_risk_score: Math.round(s.riskScore * 10),
+          previous_risk_score: prev != null ? Math.round(prev) : Math.round(s.riskScore * 10),
           previous_risk_level: s.riskLevel,
           rainfall_24h_mm: rain,
-          trend: score > s.riskScore * 10 + 1 ? 'increasing' : 'stable',
+          trend,
         },
         geometry: { type: 'Point', coordinates: [s.coordinates[1], s.coordinates[0]] },
       };
@@ -282,7 +291,7 @@ class LiveService {
       statusSnapshot,
       lastUpdate: weather ? weather.timestamp : isoNow(),
       nextUpdate: new Date(now + CONFIG.refreshIntervalSeconds * 1000).toISOString(),
-      stale: ageMin > CONFIG.staleAfterMinutes,
+      stale: ageMin > CONFIG.staleAfterMinutes || (weather && weather.status === 'STALE') || (statusSnapshot && statusSnapshot.status === 'STALE'),
       backendReachable,
       error: backendReachable ? null : (isLiveData ? 'Backend unreachable — using live WeatherAPI data.' : 'Backend unreachable — showing simulated data.'),
     };

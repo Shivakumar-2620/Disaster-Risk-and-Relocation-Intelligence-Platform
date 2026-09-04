@@ -51,11 +51,16 @@ class Settings(BaseSettings):
     ]
 
     # ── Live / near-real-time monitoring ────────────────────────────────
-    # Which weather data source to use: "imd" (live IMD API) or "demo" (simulated).
+    # Which weather data source to use: "imd" (official IMD API), "weatherapi"
+    # (WeatherAPI.com), or "demo" (simulated, default).
     # Secrets always come from environment variables / .env — never hard-coded.
     WEATHER_PROVIDER: str = "demo"
     IMD_API_KEY: str = ""
     IMD_API_BASE_URL: str = ""
+    # WeatherAPI.com adapter (the key family used by the demo frontend) — lets the
+    # real observation flow through this gateway -> risk engine -> GeoJSON.
+    WEATHER_API_KEY: str = ""
+    WEATHER_API_QUERY: str = "11.60,76.04"  # Kalpetta / Wayanad (lat,lng)
 
     # Automatic refresh (seconds) used by the live map polling loop.
     LIVE_REFRESH_INTERVAL_SECONDS: int = 300
