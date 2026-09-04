@@ -47,6 +47,7 @@ class AppState {
         soilSaturation: true,
         safeBuffers: true,
         evacuationRoutes: true,
+        relocationInventory: false,
         satelliteBasemap: false
       },
       emergencyEvacuationAlertActive: false,

@@ -50,9 +50,16 @@ class WayanadMapService {
     this.hazardLayers.debris = L.layerGroup().addTo(this.map);
     this.hazardLayers.slope = L.layerGroup().addTo(this.map);
     this.hazardLayers.safeBuffers = L.layerGroup().addTo(this.map);
+    this.hazardLayers.relocationInventory = L.layerGroup();
 
     this.renderHazardZones();
     this.renderMarkers();
+    this.renderRelocationInventory();
+
+    // Restore Module A inventory layer if it was previously enabled
+    if (appState.getState().mapLayers.relocationInventory) {
+      this.map.addLayer(this.hazardLayers.relocationInventory);
+    }
 
     // Map resize trigger
     setTimeout(() => {
@@ -114,6 +121,29 @@ class WayanadMapService {
       });
       circle.bindTooltip(`<b>${site.name}</b><br>Safe Buffer: ${site.terrainSlope}`, { sticky: true });
       this.hazardLayers.safeBuffers.addLayer(circle);
+    });
+  }
+
+  renderRelocationInventory() {
+    if (!this.map || !this.hazardLayers.relocationInventory) return;
+    this.hazardLayers.relocationInventory.clearLayers();
+
+    // MODULE A: impact footprints — households/population joined to hazard severity x vulnerability x population
+    WAYANAD_DATA.settlements.forEach(s => {
+      const isCritical = s.riskLevel === 'CRITICAL';
+      const circle = L.circle(s.coordinates, {
+        radius: 480 + s.displacedFamilies * 0.45,
+        color: isCritical ? '#e11d48' : '#f59e0b',
+        fillColor: isCritical ? '#e11d48' : '#f59e0b',
+        fillOpacity: isCritical ? 0.13 : 0.09,
+        weight: 1.5,
+        dashArray: '4, 5'
+      });
+      circle.bindTooltip(
+        `<b>${s.name}</b><br>${s.displacedFamilies.toLocaleString()} households · ${s.totalPopulation.toLocaleString()} people<br>${s.riskLevel} (${s.riskScore}/10) · relocation ${isCritical ? 'mandated' : 'advisory'}`,
+        { sticky: true }
+      );
+      this.hazardLayers.relocationInventory.addLayer(circle);
     });
   }
 
@@ -222,6 +252,45 @@ class WayanadMapService {
             </div>
           </div>
 
+          <!-- MODULE A: Impact & Relocation Inventory (spatial-join result) -->
+          <div class="rounded-xl border border-rose-200 dark:border-rose-900 bg-rose-50/70 dark:bg-rose-950/30 p-3 flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-400 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">groups</span> Module A · Impact & Relocation Inventory
+              </span>
+              <span class="font-bold px-1.5 py-0.5 rounded text-[10px] text-white ${data.riskLevel === 'CRITICAL' ? 'bg-rose-600' : 'bg-amber-500'}">${data.riskScore}/10</span>
+            </div>
+            <div class="grid grid-cols-3 gap-1.5 text-center">
+              <div class="bg-white/80 dark:bg-slate-800/60 rounded-lg py-1.5 px-1 border border-rose-100 dark:border-rose-900/40">
+                <span class="block text-[9px] uppercase tracking-wide text-slate-500">Households</span>
+                <span class="block font-bold text-sm text-rose-600 font-data-tabular">${data.displacedFamilies.toLocaleString()}</span>
+              </div>
+              <div class="bg-white/80 dark:bg-slate-800/60 rounded-lg py-1.5 px-1 border border-rose-100 dark:border-rose-900/40">
+                <span class="block text-[9px] uppercase tracking-wide text-slate-500">Population</span>
+                <span class="block font-bold text-sm text-slate-800 dark:text-slate-200 font-data-tabular">${data.totalPopulation.toLocaleString()}</span>
+              </div>
+              <div class="bg-white/80 dark:bg-slate-800/60 rounded-lg py-1.5 px-1 border border-rose-100 dark:border-rose-900/40">
+                <span class="block text-[9px] uppercase tracking-wide text-slate-500">Priority Cohort</span>
+                <span class="block font-bold text-sm text-slate-800 dark:text-slate-200 font-data-tabular">${(data.demographics.elderlyAndDisabled + data.demographics.childrenUnder10).toLocaleString()}</span>
+              </div>
+            </div>
+            <div class="bg-white/80 dark:bg-slate-800/60 rounded-lg p-2.5 border border-rose-100 dark:border-rose-900/40">
+              <div class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1.5 flex items-center gap-1">
+                <span class="material-symbols-outlined text-xs text-rose-500">psychology_alt</span> Household-Level "Why?" — Top Drivers
+              </div>
+              <ul class="space-y-1">
+                ${data.topDrivers.map(driver => `
+                  <li class="flex items-start gap-1.5 text-[11px] leading-snug text-slate-700 dark:text-slate-300">
+                    <span class="material-symbols-outlined text-xs mt-px text-rose-500 shrink-0">chevron_right</span>${driver}
+                  </li>
+                `).join('')}
+              </ul>
+            </div>
+            <div class="flex items-start gap-1.5 text-[11px] font-semibold text-rose-800 dark:text-rose-200 bg-rose-100 dark:bg-rose-900/50 rounded-lg px-2.5 py-1.5">
+              <span class="material-symbols-outlined text-sm shrink-0">crisis_alert</span> ${data.recommendedAction}
+            </div>
+          </div>
+
           <div class="space-y-2">
             <div class="flex justify-between text-xs">
               <span class="text-slate-600 dark:text-slate-300">Debris Flow Vulnerability</span>
@@ -299,6 +368,14 @@ class WayanadMapService {
     }
 
     inspectorEl.classList.remove('translate-x-full');
+  }
+
+  openSettlement(settlementId) {
+    const settlement = WAYANAD_DATA.settlements.find(s => s.id === settlementId);
+    if (!settlement || !this.map) return;
+    appState.selectSettlement(settlement.id);
+    this.map.flyTo(settlement.coordinates, 14, { duration: 0.9 });
+    this.updateInspector(settlement, 'settlement');
   }
 
   toggleLayer(layerKey, enabled) {
