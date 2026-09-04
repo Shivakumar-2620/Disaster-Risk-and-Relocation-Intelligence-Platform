@@ -138,7 +138,7 @@ export function renderLandingScreen() {
             <div class="lg:col-span-5 relative">
               <div class="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-surface-container-lowest bg-surface-container group">
                 <img 
-                  src="/images/township.jpg" 
+                  src="/images/township.png" 
                   alt="Wayanad Model Resettlement Township Concept" 
                   class="w-full h-80 sm:h-96 object-cover transform group-hover:scale-105 transition-transform duration-700"
                 />
@@ -384,12 +384,17 @@ export function renderLandingScreen() {
             
             <!-- Left Visual -->
             <div class="lg:col-span-6 relative">
-              <div class="rounded-3xl overflow-hidden shadow-2xl border-4 border-surface-container-lowest bg-surface-container">
-                <img 
-                  src="/images/gis_command.jpg" 
-                  alt="GIS Command Telemetry Interface" 
-                  class="w-full h-80 sm:h-96 object-cover"
-                />
+              <div class="rounded-3xl overflow-hidden shadow-2xl border-4 border-surface-container-lowest h-80 sm:h-96 flex items-center justify-center" style="background: linear-gradient(145deg, #ecfdf5 0%, #d1fae5 45%, #a7f3d0 100%);">
+                <div class="absolute inset-0 opacity-20 pointer-events-none" style="background-image: radial-gradient(circle at 30% 20%, #059669 1.5px, transparent 1.5px), radial-gradient(circle at 70% 70%, #059669 1.5px, transparent 1.5px); background-size: 48px 48px;"></div>
+                <div class="relative z-10 text-center px-8">
+                  <span class="inline-flex items-center justify-center w-16 h-16 rounded-3xl bg-emerald-700 text-white shadow-lg mb-4">
+                    <span class="material-symbols-outlined text-3xl">cottage</span>
+                  </span>
+                  <div class="font-display-md text-xl sm:text-2xl font-bold text-emerald-900">Sustainable Model Township</div>
+                  <p class="text-xs text-emerald-800/80 mt-1.5 font-serif max-w-md mx-auto">
+                    Climate-resilient masterplan at Kalpetta North — bedrock-anchored villas, solar microgrids, and community infrastructure.
+                  </p>
+                </div>
               </div>
             </div>
 
