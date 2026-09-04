@@ -62,7 +62,8 @@ class Settings(BaseSettings):
     WEATHER_API_KEY: str = ""
     WEATHER_API_QUERY: str = "11.60,76.04"  # Kalpetta / Wayanad (lat,lng)
 
-    # Automatic refresh (seconds) used by the live map polling loop.
+    # Automatic refresh (seconds): external-fetch TTL on the backend AND the
+    # cadence advertised to the frontend polling loop. One external call per window.
     LIVE_REFRESH_INTERVAL_SECONDS: int = 300
     # A feed is considered stale after this many minutes without a successful update.
     LIVE_STALE_AFTER_MINUTES: int = 15

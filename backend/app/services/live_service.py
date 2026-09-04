@@ -59,7 +59,22 @@ def _iso_ist(dt: Optional[datetime] = None) -> str:
 
 
 def get_live_weather() -> Dict[str, Any]:
-    """Returns the current weather observation, caching last-good for failure handling."""
+    """Current weather observation with TTL caching + last-good failure fallback.
+
+    Within LIVE_REFRESH_INTERVAL_SECONDS the last successful observation is reused
+    (coalescing the parallel /api/live/* fetches into one external call per window).
+    On provider failure the last good observation is returned as STALE; without any
+    cache a clearly-labelled simulated fallback keeps the map alive.
+    """
+    now = time.time()
+    cached = _last_good.get("weather")
+
+    ttl = settings.LIVE_REFRESH_INTERVAL_SECONDS
+    if cached and (now - cached["at"]) < ttl:
+        payload = dict(cached["payload"])
+        payload["data_age_minutes"] = round((now - cached["at"]) / 60.0, 1)
+        return payload
+
     provider = get_weather_provider()
     try:
         obs = provider.get_weather()
@@ -227,8 +242,10 @@ def get_live_status() -> Dict[str, Any]:
         age = round((time.time() - last_at) / 60.0, 1)
 
     stale = age > settings.LIVE_STALE_AFTER_MINUTES
+    weather_status = weather.get("status")  # LIVE | DEMO | STALE | UNAVAILABLE
+    root_status = "STALE" if stale or weather_status == "STALE" else weather_status
     return {
-        "status": "STALE" if stale or weather.get("status") == "STALE" else "LIVE",
+        "status": root_status,
         "sources": {
             "weather": {
                 "provider": weather.get("source"),
