@@ -12,6 +12,9 @@ class WayanadMapService {
     this.hazardLayers = {};
     this.satelliteLayer = null;
     this.osmLayer = null;
+    this.liveRiskLayer = null;
+    this.rainfallLayer = null;
+    this.alertsLayer = null;
   }
 
   initMap(containerId = 'leaflet-map-canvas') {
@@ -52,9 +55,23 @@ class WayanadMapService {
     this.hazardLayers.safeBuffers = L.layerGroup().addTo(this.map);
     this.hazardLayers.relocationInventory = L.layerGroup();
 
+    // LIVE layers (near-real-time situational map)
+    this.liveRiskLayer = L.layerGroup();
+    this.rainfallLayer = L.layerGroup();
+    this.alertsLayer = L.layerGroup();
+
+    // Live layers default ON (per appState) and restored across navigation
+    const liveLayers = appState.getState().mapLayers;
+    if (liveLayers.liveRisk) this.map.addLayer(this.liveRiskLayer);
+    if (liveLayers.rainfall) this.map.addLayer(this.rainfallLayer);
+    if (liveLayers.alerts) this.map.addLayer(this.alertsLayer);
+
     this.renderHazardZones();
     this.renderMarkers();
     this.renderRelocationInventory();
+    this.renderLiveRisk(appState.getState().liveRisk);
+    this.renderRainfall(appState.getState().liveWeather);
+    this.renderAlerts(appState.getState().liveAlerts);
 
     // Restore Module A inventory layer if it was previously enabled
     if (appState.getState().mapLayers.relocationInventory) {
@@ -147,6 +164,109 @@ class WayanadMapService {
     });
   }
 
+  /**
+   * Dynamic live risk overlay — recomputed risk GeoJSON fed by live rainfall.
+   * Replaces the existing layer each refresh WITHOUT reloading the page.
+   */
+  renderLiveRisk(fc) {
+    if (!this.map || !this.liveRiskLayer) return;
+    this.liveRiskLayer.clearLayers();
+    if (!fc || !fc.features || !fc.features.length) return;
+
+    fc.features.forEach((f) => {
+      const p = f.properties || {};
+      const [lng, lat] = f.geometry ? f.geometry.coordinates : [0, 0];
+      const color = p.risk_level === 'CRITICAL' ? '#dc2626' : p.risk_level === 'HIGH' ? '#f59e0b' : '#10b981';
+      const isRising = p.trend === 'increasing';
+      const circle = L.circle([lat, lng], {
+        radius: 520 + (p.households || 0) * 0.4,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.12,
+        weight: 2,
+        dashArray: isRising ? '3, 3' : null
+      });
+      circle.bindTooltip(
+        `<b>${p.name}</b><br>Live Risk: ${p.risk_score} ${p.risk_level} ${isRising ? '&#8593; INCREASING' : ''}<br>Prev: ${p.previous_risk_score} · Rain ${p.rainfall_24h_mm ?? '—'} mm/24h`,
+        { sticky: true }
+      );
+      circle.on('click', () => this.openSettlement(p.id));
+      this.liveRiskLayer.addLayer(circle);
+    });
+  }
+
+  /**
+   * Live rainfall layer — per-settlement rainfall intensity colour scale.
+   */
+  renderRainfall(weather) {
+    if (!this.map || !this.rainfallLayer) return;
+    this.rainfallLayer.clearLayers();
+    if (!weather || weather.rainfall_24h_mm == null) return;
+
+    const rain = weather.rainfall_24h_mm;
+    const color = rain >= 140 ? '#7f1d1d' : rain >= 90 ? '#dc2626' : rain >= 50 ? '#f59e0b' : '#3b82f6';
+    WAYANAD_DATA.settlements.forEach((s) => {
+      const c = L.circle(s.coordinates, {
+        radius: 320,
+        color: color,
+        fillColor: color,
+        fillOpacity: 0.18,
+        weight: 1.5
+      });
+      c.bindTooltip(
+        `<b>${s.name}</b><br>Rain: ${rain.toFixed(1)} mm/24h<br>${weather.forecast || ''}`,
+        { sticky: true }
+      );
+      this.rainfallLayer.addLayer(c);
+    });
+
+    // District-wide rainfall label anchored near Meppadi
+    const label = L.marker([11.5540, 76.1260], {
+      icon: L.divIcon({
+        className: 'rainfall-label',
+        html: `<div class="bg-white/90 backdrop-blur rounded px-2 py-1 text-[11px] font-bold shadow" style="border-left:4px solid ${color}">Rain ${rain.toFixed(1)} mm/24h (${weather.source})</div>`,
+        iconSize: [0, 0]
+      })
+    });
+    this.rainfallLayer.addLayer(label);
+  }
+
+  /**
+   * Live alerts layer — geographic highlight of active warning areas.
+   */
+  renderAlerts(alerts) {
+    if (!this.map || !this.alertsLayer) return;
+    this.alertsLayer.clearLayers();
+    if (!alerts || !alerts.alerts || !alerts.alerts.length) return;
+
+    alerts.alerts.forEach((a) => {
+      // Highlight the affected district footprint (Wayanad bounding region)
+      const zone = L.circle([11.5380, 76.1350], {
+        radius: 11000,
+        color: a.severity === 'HIGH' ? '#dc2626' : '#f59e0b',
+        fillColor: a.severity === 'HIGH' ? '#dc2626' : '#f59e0b',
+        fillOpacity: 0.06,
+        weight: 2,
+        dashArray: '6, 6'
+      });
+      zone.bindTooltip(
+        `<b>${a.type}</b><br>Area: ${a.area} · Severity: ${a.severity}<br>${a.message}`,
+        { sticky: true }
+      );
+      this.alertsLayer.addLayer(zone);
+
+      const icon = L.divIcon({
+        className: 'alert-icon',
+        html: `<div class="relative"><span class="material-symbols-outlined text-3xl ${a.severity === 'HIGH' ? 'text-red-600' : 'text-amber-500'}">crisis_alert</span><span class="absolute -top-1 -right-1 w-3 h-3 rounded-full ${a.severity === 'HIGH' ? 'bg-red-600' : 'bg-amber-500'} animate-ping"></span></div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+      const marker = L.marker([11.5450, 76.1350], { icon });
+      marker.bindTooltip(`<b>${a.type}</b> · ${a.severity}<br>${a.message}`, { sticky: true });
+      this.alertsLayer.addLayer(marker);
+    });
+  }
+
   renderMarkers() {
     if (!this.map || !this.markersLayer) return;
     this.markersLayer.clearLayers();
@@ -217,6 +337,21 @@ class WayanadMapService {
     const inspectorEl = document.getElementById('map-inspector-drawer');
     if (!inspectorEl) return;
 
+    // LIVE observation block (weather + trend) shared by both inspector types
+    const live = appState.getState();
+    const w = live.liveWeather;
+    const fc = live.liveRisk;
+    let liveFeature = null;
+    if (fc && fc.features) liveFeature = fc.features.find((f) => (f.properties || {}).id === data.id) || null;
+    const liveProps = liveFeature ? liveFeature.properties : null;
+    const rain = w && w.rainfall_24h_mm != null ? `${w.rainfall_24h_mm.toFixed ? w.rainfall_24h_mm.toFixed(1) : w.rainfall_24h_mm} mm/24h` : '—';
+    const liveClock = w && w.timestamp ? new Date(w.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—';
+    const trend = liveProps ? liveProps.trend : null;
+    const trendHtml = trend === 'increasing'
+      ? `<span class="inline-flex items-center gap-1 text-red-600 font-bold">&#8593; RISK INCREASING</span>`
+      : `<span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">Stable</span>`;
+    const liveMode = live.liveWeather ? (live.liveWeather.source === 'IMD' ? 'LIVE' : 'DEMO') : '—';
+
     if (type === 'settlement') {
       inspectorEl.innerHTML = `
         <div class="p-5 flex flex-col gap-4">
@@ -231,6 +366,30 @@ class WayanadMapService {
             <button onclick="document.getElementById('map-inspector-drawer').classList.add('translate-x-full')" class="text-slate-400 hover:text-slate-600">
               <span class="material-symbols-outlined text-xl">close</span>
             </button>
+          </div>
+
+          <!-- LIVE situational block -->
+          <div class="rounded-xl border border-cyan-200 dark:border-cyan-900 bg-cyan-50/70 dark:bg-cyan-950/30 p-3 flex flex-col gap-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-cyan-700 dark:text-cyan-300">
+                <span class="material-symbols-outlined text-sm">sensors</span> Live Conditions
+              </span>
+              <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold ${liveMode === 'LIVE' ? 'bg-emerald-600 text-white' : 'bg-slate-500 text-white'}">${liveMode === 'LIVE' ? '● LIVE' : '● DEMO'}</span>
+            </div>
+            <div class="grid grid-cols-2 gap-1.5">
+              <div class="bg-white/80 dark:bg-slate-800/60 rounded-lg p-2 border border-cyan-100 dark:border-cyan-900/40">
+                <span class="block text-[9px] uppercase tracking-wide text-slate-500">Current Rainfall</span>
+                <span class="block font-bold text-sm text-blue-700 dark:text-blue-300 font-data-tabular">${rain}</span>
+              </div>
+              <div class="bg-white/80 dark:bg-slate-800/60 rounded-lg p-2 border border-cyan-100 dark:border-cyan-900/40">
+                <span class="block text-[9px] uppercase tracking-wide text-slate-500">Risk Trend</span>
+                <span class="block font-bold text-sm mt-0.5">${trendHtml}</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400">
+              <span>Source: ${w ? w.source : '—'} · Last updated: ${liveClock}</span>
+              ${liveProps && liveProps.previous_risk_score != null ? `<span>Prev ${liveProps.previous_risk_score} &#8594; Now ${liveProps.risk_score}</span>` : ''}
+            </div>
           </div>
 
           <div class="grid grid-cols-2 gap-2 text-xs">
@@ -394,6 +553,15 @@ class WayanadMapService {
       } else {
         this.map.removeLayer(this.hazardLayers[layerKey]);
       }
+    } else if (layerKey === 'liveRisk' && this.liveRiskLayer) {
+      if (enabled) this.map.addLayer(this.liveRiskLayer);
+      else this.map.removeLayer(this.liveRiskLayer);
+    } else if (layerKey === 'rainfall' && this.rainfallLayer) {
+      if (enabled) this.map.addLayer(this.rainfallLayer);
+      else this.map.removeLayer(this.rainfallLayer);
+    } else if (layerKey === 'alerts' && this.alertsLayer) {
+      if (enabled) this.map.addLayer(this.alertsLayer);
+      else this.map.removeLayer(this.alertsLayer);
     }
   }
 

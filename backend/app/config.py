@@ -50,6 +50,20 @@ class Settings(BaseSettings):
         "http://127.0.0.1:5173",
     ]
 
+    # ── Live / near-real-time monitoring ────────────────────────────────
+    # Which weather data source to use: "imd" (live IMD API) or "demo" (simulated).
+    # Secrets always come from environment variables / .env — never hard-coded.
+    WEATHER_PROVIDER: str = "demo"
+    IMD_API_KEY: str = ""
+    IMD_API_BASE_URL: str = ""
+
+    # Automatic refresh (seconds) used by the live map polling loop.
+    LIVE_REFRESH_INTERVAL_SECONDS: int = 300
+    # A feed is considered stale after this many minutes without a successful update.
+    LIVE_STALE_AFTER_MINUTES: int = 15
+    # When an external feed fails, fall back to the last good observation / demo.
+    LIVE_FALLBACK_TO_DEMO: bool = True
+
     class Config:
         env_file = ".env"
 

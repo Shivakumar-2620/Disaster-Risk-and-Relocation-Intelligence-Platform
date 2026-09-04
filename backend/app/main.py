@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
-from app.routes import dashboard, settlements, sites, scenarios, reports, model
+from app.routes import dashboard, settlements, sites, scenarios, reports, model, live
 
 # Ensure DB tables exist
 Base.metadata.create_all(bind=engine)
@@ -37,6 +37,7 @@ app.include_router(sites.router)
 app.include_router(scenarios.router)
 app.include_router(reports.router)
 app.include_router(model.router)
+app.include_router(live.router)
 
 
 @app.get("/")
@@ -63,6 +64,10 @@ def root():
             "GET /api/recommendation/{id}",
             "GET /api/report/{id}",
             "GET /api/geojson/wayanad",
-            "GET /api/model/validation"
+            "GET /api/model/validation",
+            "GET /api/live/weather",
+            "GET /api/live/alerts",
+            "GET /api/live/risk-map",
+            "GET /api/live/status"
         ]
     }

@@ -48,10 +48,16 @@ class AppState {
         safeBuffers: true,
         evacuationRoutes: true,
         relocationInventory: false,
-        satelliteBasemap: false
+        satelliteBasemap: false,
+        liveRisk: true,
+        rainfall: true,
+        alerts: true
       },
       emergencyEvacuationAlertActive: false,
-      cabinetApprovalSubmitted: false
+      cabinetApprovalSubmitted: false,
+      liveRisk: null,
+      liveWeather: null,
+      liveAlerts: null
     };
 
     this.listeners = new Set();
@@ -140,6 +146,13 @@ class AppState {
       this.state.mapLayers[layerName] = !this.state.mapLayers[layerName];
       this.notify();
     }
+  }
+
+  setLiveData({ risk, weather, alerts }) {
+    if (risk !== undefined) this.state.liveRisk = risk;
+    if (weather !== undefined) this.state.liveWeather = weather;
+    if (alerts !== undefined) this.state.liveAlerts = alerts;
+    this.notify();
   }
 
   triggerEmergencyEvacuation(active = true) {

@@ -45,6 +45,12 @@ export class Router {
     const routeConfig = this.routes[routeName];
     appState.setRoute(routeName);
 
+    // Clean up screen-scoped resources (e.g. stop live polling) before switching
+    if (typeof window.__mapLiveCleanup === 'function') {
+      try { window.__mapLiveCleanup(); } catch (e) { /* ignore */ }
+      window.__mapLiveCleanup = null;
+    }
+
     const fullContainer = document.getElementById('full-screen-container');
     const appShell = document.getElementById('app-shell');
     const mainContent = document.getElementById('main-content-container');
