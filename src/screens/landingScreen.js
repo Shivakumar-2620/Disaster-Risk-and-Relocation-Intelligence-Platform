@@ -5,11 +5,24 @@
 import { WAYANAD_DATA } from '../data/wayanadData.js';
 import { appState } from '../services/state.js';
 import { showToast } from '../components/Toast.js';
+import { renderHighlightGroup, initHighlightGroup } from '../components/highlightGroup.js';
 
 export function renderLandingScreen() {
   const { overviewStats } = WAYANAD_DATA.district;
   const siteAlpha = WAYANAD_DATA.candidateResettlementSites[0];
   const settlements = WAYANAD_DATA.settlements;
+
+  // Spring-glide highlight group for the Four Pillars section (vanilla port of
+  // the unlumen-ui Highlight mode="parent" primitive).
+  const pillarsHighlightHtml = renderHighlightGroup({
+    id: 'pillars-highlight',
+    items: [
+      { value: '1', label: 'Hazard Zonation', icon: 'radar' },
+      { value: '2', label: 'MCDA Matching', icon: 'tune' },
+      { value: '3', label: 'Climate Stress', icon: 'thunderstorm' },
+      { value: '4', label: 'Dept. Audit', icon: 'fact_check' },
+    ],
+  });
 
   return `
     <div class="min-h-screen bg-background text-on-surface flex flex-col font-sans selection:bg-secondary-container selection:text-on-secondary-container">
@@ -232,9 +245,14 @@ export function renderLandingScreen() {
             </p>
           </div>
 
+          <!-- Interactive pillar selector — gliding highlight pill -->
+          <div class="flex justify-center pt-1">
+            ${pillarsHighlightHtml}
+          </div>
+
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <!-- Pillar 1 -->
-            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group">
+            <div data-pillar-card="1" class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group">
               <div class="space-y-3">
                 <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-800 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <span class="material-symbols-outlined text-2xl">radar</span>
@@ -251,7 +269,7 @@ export function renderLandingScreen() {
             </div>
 
             <!-- Pillar 2 -->
-            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group">
+            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group" data-pillar-card="2">
               <div class="space-y-3">
                 <div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-800 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <span class="material-symbols-outlined text-2xl">tune</span>
@@ -268,7 +286,7 @@ export function renderLandingScreen() {
             </div>
 
             <!-- Pillar 3 -->
-            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group">
+            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group" data-pillar-card="3">
               <div class="space-y-3">
                 <div class="w-12 h-12 rounded-2xl bg-blue-100 text-blue-800 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <span class="material-symbols-outlined text-2xl">thunderstorm</span>
@@ -285,7 +303,7 @@ export function renderLandingScreen() {
             </div>
 
             <!-- Pillar 4 -->
-            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group">
+            <div class="bg-surface-container-lowest p-6 rounded-3xl border border-outline-variant shadow-sm hover:shadow-xl transition-all duration-300 space-y-4 flex flex-col justify-between group" data-pillar-card="4">
               <div class="space-y-3">
                 <div class="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center group-hover:scale-110 transition-transform">
                   <span class="material-symbols-outlined text-2xl">fact_check</span>
@@ -591,6 +609,22 @@ export function setupLandingEvents() {
           </div>
         `;
       }
+    });
+  }
+
+  // Four Pillars gliding-highlight selector — emphasise the matching card
+  const pillarsHighlight = document.getElementById('pillars-highlight');
+  if (pillarsHighlight) {
+    initHighlightGroup(pillarsHighlight, {
+      onValueChange: (val) => {
+        document.querySelectorAll('[data-pillar-card]').forEach((card) => {
+          const on = val != null && card.getAttribute('data-pillar-card') === val;
+          card.classList.toggle('ring-2', on);
+          card.classList.toggle('ring-emerald-500/70', on);
+          card.classList.toggle('shadow-xl', on);
+          card.classList.toggle('-translate-y-1', on);
+        });
+      },
     });
   }
 
