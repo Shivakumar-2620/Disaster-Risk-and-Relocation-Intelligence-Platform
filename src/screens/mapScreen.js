@@ -9,7 +9,6 @@ import { WAYANAD_DATA } from '../data/wayanadData.js';
 export function renderMapScreen() {
   const { mapLayers, liveWeather, liveAlerts } = appState.getState();
   const cfg = liveService.getConfig();
-  const baseMapName = import.meta.env.VITE_GEOAPIFY_KEY ? 'Geoapify' : 'OpenStreetMap';
 
   // MODULE A: Household Impact & Relocation Inventory (spatial-join summary)
   const settlements = WAYANAD_DATA.settlements;
@@ -147,29 +146,6 @@ export function renderMapScreen() {
           <span>Center: 11.538° N, 76.135° E (Meppadi Axis)</span>
         </div>
       </div>
-
-      <!-- DATA SOURCES / Provenance Panel -->
-      <div class="absolute bottom-6 right-4 z-20 bg-surface-container-lowest/90 backdrop-blur-md p-3 rounded-2xl border border-outline-variant shadow-lg text-[10px] w-52">
-        <div class="font-bold text-on-surface uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-1">
-          <span class="material-symbols-outlined text-xs">verified_user</span> DATA SOURCES
-        </div>
-        <div id="provenance-weather" class="flex items-center justify-between gap-1 text-slate-600">
-          <span>Weather:</span>
-          <span class="font-mono text-slate-800">${liveWeather ? liveWeather.source : '—'} · ${lastClock}</span>
-        </div>
-        <div class="flex items-center justify-between gap-1 text-slate-600 mt-1">
-          <span>Base Map:</span>
-          <span class="font-mono text-slate-800">${baseMapName}</span>
-        </div>
-        <div class="flex items-center justify-between gap-1 text-slate-600 mt-1">
-          <span>Risk:</span>
-          <span class="font-mono text-slate-800">Platform Risk Engine · now</span>
-        </div>
-        <div id="provenance-mode" class="mt-1.5 pt-1.5 border-t border-outline-variant text-[9px] font-semibold ${liveMode === 'LIVE' ? 'text-emerald-600' : 'text-amber-600'}">
-          ${liveMode === 'LIVE' ? '● LIVE DATA' : '● DEMO / SIMULATED DATA'}
-        </div>
-      </div>
-
       <!-- MODULE A: Relocation Inventory Feature Panel -->
       <div id="map-inventory-panel" class="absolute top-28 md:top-24 left-4 z-20 w-[360px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-10rem)] bg-surface-container-lowest/95 backdrop-blur-md rounded-2xl border border-outline-variant shadow-xl flex flex-col overflow-hidden ${mapLayers.relocationInventory ? '' : 'hidden'}">
         <div class="flex items-start justify-between gap-3 px-4 py-3 border-b border-outline-variant bg-violet-50/70 dark:bg-violet-950/30 shrink-0">
@@ -294,16 +270,6 @@ export function setupMapEvents() {
     const legendRain = document.getElementById('legend-row-rainfall')?.querySelector('span:last-child');
     if (legendRain && data.weather && data.weather.rainfall_24h_mm != null) {
       legendRain.textContent = `Live Rainfall Layer (${data.weather.rainfall_24h_mm.toFixed ? data.weather.rainfall_24h_mm.toFixed(1) : data.weather.rainfall_24h_mm} mm)`;
-    }
-
-    // Provenance
-    const provWeather = document.getElementById('provenance-weather');
-    if (provWeather && data.weather) {
-      provWeather.innerHTML = `<span>Weather:</span><span class="font-mono text-slate-800">${data.weather.source} · ${liveService.formatClock(data.weather.timestamp)}</span>`;
-    }
-    const provMode = document.getElementById('provenance-mode');
-    if (provMode) {
-      provMode.textContent = isLiveSource(data.weather && data.weather.source) ? '● LIVE DATA' : '● DEMO / SIMULATED DATA';
     }
 
     // Update map layers + persist to appState for cross-navigation + inspector
