@@ -4,6 +4,7 @@
 import { WAYANAD_DATA } from '../data/wayanadData.js';
 import { appState } from '../services/state.js';
 import { openEmergencyModal } from '../components/Modal.js';
+import { openDemoGuide } from '../components/demoGuide.js';
 
 export function renderDashboardScreen() {
   const { overviewStats } = WAYANAD_DATA.district;
@@ -38,6 +39,10 @@ export function renderDashboardScreen() {
             <span class="material-symbols-outlined text-base">explore</span>
             <span>View Geo-Spatial Map</span>
           </a>
+          <button id="dashboard-demo-btn" class="flex items-center gap-1.5 bg-amber-500 hover:bg-amber-400 text-white text-xs font-bold px-3.5 py-2 rounded-xl shadow transition active:scale-95" title="Walk the complete SIH workflow in seven guided steps">
+            <span class="material-symbols-outlined text-base">auto_awesome</span>
+            <span>Start Guided Demo</span>
+          </button>
         </div>
       </div>
 
@@ -280,6 +285,10 @@ export function renderDashboardScreen() {
 export function setupDashboardEvents() {
   document.getElementById('dashboard-emergency-btn')?.addEventListener('click', () => {
     openEmergencyModal();
+  });
+
+  document.getElementById('dashboard-demo-btn')?.addEventListener('click', () => {
+    openDemoGuide();
   });
 
   // Settlement Search & Filter

@@ -58,6 +58,10 @@ export function renderRecommendationScreen() {
           </div>
           <h1 class="font-display-md text-2xl md:text-3xl font-bold text-primary">Scenario Testing & Dynamic Recommendation</h1>
           <p class="text-xs text-on-surface-variant mt-1">Multi-variable stress tests: Rainfall surge, arterial road cut-offs, and parcel capacity constraints</p>
+          <span class="inline-flex items-center gap-1 mt-1.5 text-[10px] font-bold uppercase tracking-wider text-amber-800 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-2 py-1 rounded-md">
+            <span class="material-symbols-outlined text-[11px]">science</span>
+            Prototype scenario · Not a live forecast · Decision support only
+          </span>
         </div>
 
         <a href="#final-report" class="bg-primary hover:bg-primary-container text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow transition flex items-center gap-1.5">

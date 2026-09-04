@@ -14,6 +14,8 @@ import { renderRelocationToolScreen, setupRelocationToolEvents } from './screens
 import { renderSiteRevalidationScreen, setupSiteRevalidationEvents } from './screens/siteRevalidationScreen.js';
 import { renderRecommendationScreen, setupRecommendationEvents } from './screens/recommendationScreen.js';
 import { renderFinalReportScreen, setupFinalReportEvents } from './screens/finalReportScreen.js';
+import { renderArchitectureScreen, setupArchitectureEvents } from './screens/architectureScreen.js';
+import { syncDemoGuide, clearDemoGuide } from './components/demoGuide.js';
 import { openEmergencyModal } from './components/Modal.js';
 
 export class Router {
@@ -28,7 +30,8 @@ export class Router {
       'relocation-tool': { render: renderRelocationToolScreen, setup: setupRelocationToolEvents },
       'site-revalidation': { render: renderSiteRevalidationScreen, setup: setupSiteRevalidationEvents },
       'recommendation': { render: renderRecommendationScreen, setup: setupRecommendationEvents },
-      'final-report': { render: renderFinalReportScreen, setup: setupFinalReportEvents }
+      'final-report': { render: renderFinalReportScreen, setup: setupFinalReportEvents },
+      'architecture': { render: renderArchitectureScreen, setup: setupArchitectureEvents }
     };
 
     window.addEventListener('hashchange', () => this.handleRoute());
@@ -58,6 +61,7 @@ export class Router {
     const headerMount = document.getElementById('header-mount');
 
     if (routeConfig.fullScreen) {
+      clearDemoGuide();
       if (appShell) appShell.classList.add('hidden');
       if (fullContainer) {
         fullContainer.classList.remove('hidden');
@@ -82,6 +86,7 @@ export class Router {
       }
 
       this.setupGlobalEvents();
+      syncDemoGuide();
     }
 
     window.scrollTo({ top: 0, behavior: 'smooth' });
