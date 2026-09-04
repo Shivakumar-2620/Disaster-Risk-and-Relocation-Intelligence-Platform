@@ -15,24 +15,9 @@ export function renderSidebar() {
     { id: 'relocation-tool', label: 'Relocation Planning Tool', icon: 'hub', badge: 'MCDA' },
     { id: 'site-revalidation', label: 'Site Revalidation', icon: 'fact_check', badge: 'GSI' },
     { id: 'recommendation', label: 'Climate Scenarios', icon: 'thunderstorm', badge: 'Sim' },
-    { id: 'final-report', label: 'Executive Cabinet Dossier', icon: 'description', badge: 'G.O.' }
+    { id: 'final-report', label: 'Executive Cabinet Dossier', icon: 'description', badge: 'G.O.' },
+    { id: 'architecture', label: 'System Architecture', icon: 'account_tree', badge: 'Explain' }
   ];
-
-  // Demo journey progress (SIH workflow stages) mapped from current route
-  const DEMO_STAGES = [
-    { stage: 1, label: 'Risk Detection', route: 'map' },
-    { stage: 2, label: 'Prioritization', route: 'risk-profile' },
-    { stage: 3, label: 'Relocation Planning', route: 'relocation-tool' },
-    { stage: 4, label: 'Site Validation', route: 'site-revalidation' },
-    { stage: 5, label: 'Scenario Analysis', route: 'recommendation' },
-    { stage: 6, label: 'Recommendation', route: 'final-report' }
-  ];
-  const STAGE_OF_ROUTE = {
-    dashboard: 1, map: 1, 'model-validation': 1,
-    'risk-profile': 2, 'relocation-tool': 3,
-    'site-revalidation': 4, recommendation: 5, 'final-report': 6
-  };
-  const currentStage = STAGE_OF_ROUTE[currentRoute] || 1;
 
   return `
     <aside id="app-sidebar" class="hidden md:flex flex-col bg-background border-r border-outline-variant fixed left-0 top-0 h-full w-[280px] py-6 z-40 transition-transform duration-300">
@@ -63,32 +48,6 @@ export function renderSidebar() {
           </span>
           <span class="material-symbols-outlined text-sm text-slate-400">open_in_new</span>
         </a>
-      </div>
-
-      <!-- Demo Journey Progress -->
-      <div class="px-4 mb-3">
-        <div class="bg-surface-container-low rounded-xl border border-outline-variant p-3 space-y-1.5">
-          <div class="flex items-center justify-between">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">Demo Journey</span>
-            <span class="text-[10px] font-mono text-primary font-bold">Stage ${currentStage} / 6</span>
-          </div>
-          <div class="space-y-0.5">
-            ${DEMO_STAGES.map(st => {
-              const isDone = st.stage < currentStage;
-              const isActive = st.stage === currentStage;
-              return `
-                <a href="#${st.route}" class="flex items-center gap-2 px-2 py-1 rounded-md transition ${isActive ? 'bg-primary/10 ring-1 ring-primary/30' : 'hover:bg-surface-container-high'}">
-                  <span class="w-4 h-4 rounded-full shrink-0 flex items-center justify-center text-[9px] font-bold font-mono ${isDone ? 'bg-emerald-600 text-white' : isActive ? 'bg-primary text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-300'}">${isDone ? '✓' : st.stage}</span>
-                  <span class="text-[11px] font-semibold truncate ${isActive ? 'text-primary' : isDone ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400'}">${st.label}</span>
-                </a>
-              `;
-            }).join('')}
-          </div>
-          <a href="#architecture" class="flex items-center gap-2 mt-1 pt-1.5 border-t border-outline-variant text-[11px] font-semibold text-on-surface-variant hover:text-primary transition">
-            <span class="material-symbols-outlined text-sm text-primary">account_tree</span>
-            <span>System Architecture & Explainability</span>
-          </a>
-        </div>
       </div>
 
       <!-- Navigation Links -->
