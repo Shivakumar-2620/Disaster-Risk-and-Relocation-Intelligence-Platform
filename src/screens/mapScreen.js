@@ -230,7 +230,14 @@ export function renderMapScreen() {
                     </td>
                     <td class="py-2 px-2 text-right font-bold text-rose-600">${s.displacedFamilies.toLocaleString()}</td>
                     <td class="py-2 px-2 text-right text-slate-700 dark:text-slate-300">${s.totalPopulation.toLocaleString()}</td>
-                    <td class="py-2 px-3 text-slate-500 dark:text-slate-400 leading-snug">${s.topDrivers[0] || ''}<span class="text-slate-400">${s.topDrivers.length > 1 ? ` +${s.topDrivers.length - 1} more` : ''}</span></td>
+                    <td class="py-2 px-3 text-slate-500 dark:text-slate-400 leading-snug">
+                      <button type="button" class="why-btn inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/40 hover:bg-violet-100 dark:hover:bg-violet-900/40 border border-violet-200 dark:border-violet-800 rounded-md px-1.5 py-0.5 transition" title="Show all household-level Why? drivers">
+                        <span class="material-symbols-outlined text-xs">psychology_alt</span> Why?
+                      </button>
+                      <div class="why-drivers mt-1.5 hidden space-y-1">
+                        ${s.topDrivers.map(d => `<div class="flex items-start gap-1 text-[10px] leading-snug text-slate-600 dark:text-slate-400"><span class="material-symbols-outlined text-[11px] text-rose-500 mt-px shrink-0">chevron_right</span>${d}</div>`).join('')}
+                      </div>
+                    </td>
                   </tr>
                 `;
               }).join('')}
@@ -390,5 +397,14 @@ export function setupMapEvents() {
 
   document.querySelectorAll('.map-inventory-row').forEach(row => {
     row.addEventListener('click', () => mapService.openSettlement(row.dataset.id));
+  });
+
+  // MODULE A: "Why?" buttons expand the full household-level driver list inline
+  document.querySelectorAll('.why-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation(); // don't trigger the row fly-to
+      const list = btn.nextElementSibling;
+      if (list) list.classList.toggle('hidden');
+    });
   });
 }

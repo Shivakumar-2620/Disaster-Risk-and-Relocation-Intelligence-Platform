@@ -45,7 +45,11 @@ class WayanadMapService {
     }).addTo(this.map);
 
     this.satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19
+      maxZoom: 19,
+      // Esri blanks tiles with a "Map data not yet available" placeholder when it
+      // detects the requesting site's referer. Sending no referer keeps imagery serving.
+      referrerPolicy: 'no-referrer',
+      attribution: '&copy; Esri, Maxar, Earthstar Geographics, &copy; OpenStreetMap contributors'
     });
 
     // Layers groups
