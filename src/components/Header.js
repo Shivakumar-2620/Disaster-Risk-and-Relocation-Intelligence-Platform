@@ -9,7 +9,7 @@ export function renderHeader() {
   const user = state.currentUser;
 
   return `
-    <header class="bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center w-full px-4 md:px-margin-desktop h-16 z-30 sticky top-0">
+    <header class="bg-surface-container-lowest border-b border-outline-variant flex justify-between items-center w-full px-4 md:px-margin-desktop h-16 z-50 sticky top-0">
       <!-- Left: Mobile Menu & Breadcrumb -->
       <div class="flex items-center gap-3">
         <button id="mobile-sidebar-toggle" class="md:hidden p-2 rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800">
