@@ -3,12 +3,13 @@
  */
 import { mapService } from '../services/mapService.js';
 import { appState } from '../services/state.js';
-import { liveService, fmtClock } from '../services/liveService.js';
+import { liveService, fmtClock, isLiveSource } from '../services/liveService.js';
 import { WAYANAD_DATA } from '../data/wayanadData.js';
 
 export function renderMapScreen() {
   const { mapLayers, liveWeather, liveAlerts } = appState.getState();
   const cfg = liveService.getConfig();
+  const baseMapName = import.meta.env.VITE_GEOAPIFY_KEY ? 'Geoapify' : 'OpenStreetMap';
 
   // MODULE A: Household Impact & Relocation Inventory (spatial-join summary)
   const settlements = WAYANAD_DATA.settlements;
@@ -19,7 +20,7 @@ export function renderMapScreen() {
   const peopleRequiringRelocation = criticalSettlements.reduce((sum, s) => sum + s.totalPopulation, 0);
 
   // LIVE situational header state
-  const liveMode = liveWeather && liveWeather.source === 'IMD' ? 'LIVE' : 'DEMO';
+  const liveMode = isLiveSource(liveWeather && liveWeather.source) ? 'LIVE' : 'DEMO';
   const lastClock = liveWeather && liveWeather.timestamp ? fmtClock(liveWeather.timestamp) : '—';
   const alertCount = liveAlerts && liveAlerts.count ? liveAlerts.count : 0;
   const alertSeverity = liveAlerts && liveAlerts.severity ? liveAlerts.severity : 'LOW';
@@ -158,7 +159,7 @@ export function renderMapScreen() {
         </div>
         <div class="flex items-center justify-between gap-1 text-slate-600 mt-1">
           <span>Base Map:</span>
-          <span class="font-mono text-slate-800">OpenStreetMap</span>
+          <span class="font-mono text-slate-800">${baseMapName}</span>
         </div>
         <div class="flex items-center justify-between gap-1 text-slate-600 mt-1">
           <span>Risk:</span>
@@ -302,7 +303,7 @@ export function setupMapEvents() {
     }
     const provMode = document.getElementById('provenance-mode');
     if (provMode) {
-      provMode.textContent = data.backendReachable && data.weather && data.weather.source === 'IMD' ? '● LIVE DATA' : '● DEMO / SIMULATED DATA';
+      provMode.textContent = isLiveSource(data.weather && data.weather.source) ? '● LIVE DATA' : '● DEMO / SIMULATED DATA';
     }
 
     // Update map layers + persist to appState for cross-navigation + inspector

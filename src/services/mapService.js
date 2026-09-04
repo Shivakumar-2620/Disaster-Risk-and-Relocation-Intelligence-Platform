@@ -4,6 +4,7 @@
 import L from 'leaflet';
 import { WAYANAD_DATA } from '../data/wayanadData.js';
 import { appState } from './state.js';
+import { isLiveSource } from './liveService.js';
 
 class WayanadMapService {
   constructor() {
@@ -40,9 +41,13 @@ class WayanadMapService {
     L.control.zoom({ position: 'topright' }).addTo(this.map);
 
     // Basemaps
-    this.osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
-    }).addTo(this.map);
+    const geoKey = import.meta.env.VITE_GEOAPIFY_KEY || '';
+    this.osmLayer = geoKey
+      ? L.tileLayer(`https://maps.geoapify.com/v1/tile/osm-bright/{z}/{x}/{y}.png?apiKey=${geoKey}`, {
+          maxZoom: 20,
+          attribution: '&copy; OpenStreetMap contributors &copy; <a href="https://www.geoapify.com/">Geoapify</a>'
+        }).addTo(this.map)
+      : L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(this.map);
 
     this.satelliteLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
       maxZoom: 19,
@@ -354,7 +359,7 @@ class WayanadMapService {
     const trendHtml = trend === 'increasing'
       ? `<span class="inline-flex items-center gap-1 text-red-600 font-bold">&#8593; RISK INCREASING</span>`
       : `<span class="inline-flex items-center gap-1 text-emerald-600 font-semibold">Stable</span>`;
-    const liveMode = live.liveWeather ? (live.liveWeather.source === 'IMD' ? 'LIVE' : 'DEMO') : '—';
+    const liveMode = isLiveSource(live.liveWeather && live.liveWeather.source) ? 'LIVE' : 'DEMO';
 
     if (type === 'settlement') {
       inspectorEl.innerHTML = `

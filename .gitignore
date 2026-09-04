@@ -5,3 +5,8 @@ __pycache__/
 node_modules/
 dist/
 .vercel/
+
+# Local env with real API keys — never commit
+.env
+.env.local
+.env.*.local

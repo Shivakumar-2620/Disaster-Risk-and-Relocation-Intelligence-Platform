@@ -15,6 +15,7 @@ const CONFIG = {
   refreshIntervalSeconds: Number(import.meta.env.VITE_LIVE_REFRESH_SECONDS || 60),
   staleAfterMinutes: Number(import.meta.env.VITE_LIVE_STALE_MINUTES || 15),
   backendTimeoutMs: 8000,
+  weatherApiKey: import.meta.env.VITE_WEATHERAPI_KEY || '',
 };
 
 function isoNow() {
@@ -131,9 +132,48 @@ class DemoProvider {
   }
 }
 
+/**
+ * Live weather from the WeatherAPI.com public API (key via VITE_WEATHERAPI_KEY).
+ * Queries Wayanad (Kalpetta). Returns the normalized observation shape and is
+ * clearly labelled LIVE so the UI never overclaims.
+ */
+class WeatherAPIProvider {
+  constructor(key) {
+    this.key = key;
+    this.source = 'WEATHERAPI';
+  }
+
+  async getWeather() {
+    const url =
+      'https://api.weatherapi.com/v1/forecast.json?q=11.60,76.04&days=1&aqi=no&alerts=yes&key=' +
+      encodeURIComponent(this.key);
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`WeatherAPI HTTP ${res.status}`);
+    const j = await res.json();
+    const cur = j.current || {};
+    const day =
+      (j.forecast && j.forecast.forecastday && j.forecast.forecastday[0] && j.forecast.forecastday[0].day) || {};
+    return {
+      source: this.source,
+      timestamp: isoNow(),
+      status: 'LIVE',
+      data_age_minutes: 0,
+      region: 'Wayanad, Kerala',
+      station_id: (j.location && j.location.name) || 'Kalpetta',
+      rainfall_24h_mm: day.totalprecip_mm != null ? day.totalprecip_mm : 0,
+      rainfall_now_mm: cur.precip_mm != null ? cur.precip_mm : 0,
+      temperature_c: cur.temp_c != null ? cur.temp_c : 0,
+      humidity_pct: cur.humidity != null ? cur.humidity : 0,
+      wind_kph: cur.wind_kph != null ? cur.wind_kph : 0,
+      forecast: (cur.condition && cur.condition.text) || 'No forecast',
+    };
+  }
+}
+
 class LiveService {
   constructor() {
     this.demo = new DemoProvider();
+    this.weatherApi = new WeatherAPIProvider(CONFIG.weatherApiKey);
     this.timer = null;
     this.running = false;
     this.lastGoodWeather = null;
@@ -206,15 +246,23 @@ class LiveService {
       }
     } catch (e) {
       backendReachable = false;
-      // Fallback: use last-good or fresh demo data, always labelled.
-      weather = this.lastGoodWeather || this.demo.getWeather();
+      // Fallback chain: real WeatherAPI.com provider (if a key is configured) -> demo.
+      weather = null;
+      if (CONFIG.weatherApiKey) {
+        try {
+          weather = await this.weatherApi.getWeather();
+        } catch (e2) {
+          weather = null;
+        }
+      }
+      weather = weather || this.lastGoodWeather || this.demo.getWeather();
       const demo = this.demo;
       alerts = demo.getAlerts(weather);
       riskMap = demo.getRiskMap(weather);
       statusSnapshot = {
-        status: 'DEMO',
+        status: weather.status,
         sources: {
-          weather: { provider: 'DEMO', status: 'DEMO', last_update: weather.timestamp },
+          weather: { provider: weather.source, status: weather.status, last_update: weather.timestamp },
           base_map: { provider: 'OpenStreetMap', status: 'LIVE' },
           risk: { provider: 'Platform Risk Engine', status: 'LIVE' },
         },
@@ -222,12 +270,12 @@ class LiveService {
       };
     }
 
-    const isBackendLive = backendReachable && weather && weather.status === 'LIVE';
+    const isLiveData = weather && weather.source && weather.source !== 'DEMO' && weather.source !== 'UNAVAILABLE' && weather.status === 'LIVE';
     const ageMin = weather && weather.data_age_minutes != null ? weather.data_age_minutes : 0;
     this.data = {
       ...this._initial(),
-      mode: isBackendLive ? 'LIVE' : 'DEMO',
-      status: isBackendLive ? 'LIVE' : 'DEMO',
+      mode: isLiveData ? 'LIVE' : 'DEMO',
+      status: isLiveData ? 'LIVE' : 'DEMO',
       weather,
       alerts: alerts || this.demo.getAlerts(weather),
       riskMap,
@@ -236,7 +284,7 @@ class LiveService {
       nextUpdate: new Date(now + CONFIG.refreshIntervalSeconds * 1000).toISOString(),
       stale: ageMin > CONFIG.staleAfterMinutes,
       backendReachable,
-      error: backendReachable ? null : 'Backend unreachable — showing simulated data.',
+      error: backendReachable ? null : (isLiveData ? 'Backend unreachable — using live WeatherAPI data.' : 'Backend unreachable — showing simulated data.'),
     };
     this._emit();
   }
@@ -265,3 +313,8 @@ class LiveService {
 
 export const liveService = new LiveService();
 export { fmtClock };
+
+/** True when a data source is real (not demo/simulated). */
+export function isLiveSource(source) {
+  return !!source && source !== 'DEMO' && source !== 'UNAVAILABLE';
+}
